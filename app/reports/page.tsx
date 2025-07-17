@@ -151,6 +151,18 @@ const reportSites = [
 export default function ReportsPage() {
   return (
     <div className="max-w-7xl mx-auto px-20 py-12">
+      {/* 面包屑导航 */}
+      <Breadcrumb className="mb-8">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/" className="text-gray-600 hover:text-gray-900">首页</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator className="text-gray-400" />
+          <BreadcrumbItem>
+            <BreadcrumbPage className="text-gray-900">双碳公开报告资源库</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
       {/* 顶部 Banner */}
       <div className="relative w-full mb-8">
         <div className="rounded-2xl bg-gradient-to-r from-blue-100 via-white to-green-100 p-8 flex flex-col md:flex-row items-center gap-6 shadow">
@@ -161,22 +173,6 @@ export default function ReportsPage() {
           </div>
         </div>
       </div>
-      {/* 面包屑导航 */}
-      <Breadcrumb className="mb-8">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/" className="text-gray-600 hover:text-gray-900">首页</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator className="text-gray-400" />
-          <BreadcrumbItem>
-            <BreadcrumbLink href="/#consulting" className="text-gray-600 hover:text-gray-900">双碳快讯</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator className="text-gray-400" />
-          <BreadcrumbItem>
-            <BreadcrumbPage className="text-gray-900">双碳公开报告资源库</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
       <div className="space-y-10">
         {reportCategories.map((category) => (
           <Card key={category.id} className="overflow-hidden">

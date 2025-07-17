@@ -6,42 +6,6 @@ import { ArrowLeft, FileText, BarChart3, Globe, Calendar, ExternalLink, Search, 
 import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 
-// 模拟数据
-const policies = [
-  {
-    id: 1,
-    title: "《碳排放权交易管理办法（试行）》",
-    level: "国家级",
-    date: "2021-01-05",
-    summary: "规范全国碳排放权交易市场的运行管理，推动温室气体减排。",
-    url: "#"
-  },
-  {
-    id: 2,
-    title: "《2030年前碳达峰行动方案》",
-    level: "国家级", 
-    date: "2021-10-26",
-    summary: "明确2030年前碳达峰的总体要求、主要目标和重点任务。",
-    url: "#"
-  },
-  {
-    id: 3,
-    title: "北京市碳达峰实施方案",
-    level: "地方级",
-    date: "2022-11-03",
-    summary: "北京市实现碳达峰目标的具体实施路径和保障措施。",
-    url: "#"
-  },
-  {
-    id: 4,
-    title: "上海市碳达峰实施方案",
-    level: "地方级",
-    date: "2022-07-28",
-    summary: "上海市碳达峰行动的时间表、路线图和施工图。",
-    url: "#"
-  }
-]
-
 // 政策法规轮播数据
 const policySlides = [
   {
@@ -142,15 +106,10 @@ const datasets = [
   }
 ]
 
-export default function ConsultingPage() {
+export default function NewsPage() {
   const [activeTab, setActiveTab] = useState("policies")
-  const [searchTerm, setSearchTerm] = useState("")
   const [currentSlide, setCurrentSlide] = useState(0)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
-
-  const getLevelColor = (level: string) => {
-    return level === "国家级" ? "bg-red-100 text-red-800" : "bg-blue-100 text-blue-800"
-  }
 
   const getCategoryColor = (category: string) => {
     const colors = {
@@ -189,18 +148,16 @@ export default function ConsultingPage() {
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <Link 
-                href="/" 
-                className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-              >
-                <ArrowLeft className="h-5 w-5 mr-2" />
-                返回首页
-              </Link>
-              <div className="h-6 w-px bg-gray-300"></div>
-              <h1 className="text-2xl font-bold text-gray-900">双碳快讯</h1>
-            </div>
+          <div className="flex items-center space-x-4">
+            <Link 
+              href="/" 
+              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+            >
+              <ArrowLeft className="h-5 w-5 mr-2" />
+              返回首页
+            </Link>
+            <div className="h-6 w-px bg-gray-300"></div>
+            <h1 className="text-2xl font-bold text-gray-900">双碳快讯</h1>
           </div>
         </div>
       </div>
@@ -214,20 +171,6 @@ export default function ConsultingPage() {
             <p className="text-lg text-gray-600 max-w-3xl mx-auto">
               汇聚最新的碳经济政策法规、权威研究文章和公开数据资源，为您提供全面、及时、准确的碳经济信息服务，助力双碳目标实现。
             </p>
-          </div>
-        </div>
-
-        {/* Search Bar */}
-        <div className="bg-white rounded-xl shadow-md p-6 mb-8">
-          <div className="relative max-w-md mx-auto">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
-            <input
-              type="text"
-              placeholder="搜索政策、文章或数据..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
           </div>
         </div>
 

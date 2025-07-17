@@ -70,7 +70,7 @@ export default function HomeHeader() {
               关于平台
             </a>
             <a
-              href="#consulting"
+              href="#news"
               className="px-3 py-2 rounded-md text-base font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
             >
               双碳快讯
@@ -151,7 +151,7 @@ export default function HomeHeader() {
             关于平台
           </a>
           <a
-            href="#consulting"
+            href="#news"
             className="block px-3 py-2 rounded-md text-lg font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
           >
             双碳快讯
