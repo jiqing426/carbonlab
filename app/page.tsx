@@ -325,7 +325,7 @@ export default function Home() {
 
 
         {/* 双碳快讯 */}
-        <section id="consulting" className="py-9 bg-gray-50">
+        <section id="news" className="py-9 bg-gray-50">
           <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">双碳快讯</h2>
           <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
             {/* 左侧：政策法规轮播 */}
