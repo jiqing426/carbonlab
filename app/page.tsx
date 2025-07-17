@@ -110,8 +110,8 @@ const policySlides = [
   }
 ]
 
-// 公开文章数据
-const articles = [
+// 公开报告数据
+const reports = [
   {
     id: 1,
     title: "世界能源投资报告 2025（IEA）",
@@ -128,7 +128,7 @@ const articles = [
     id: 3,
     title: "碳金融产品创新与发展趋势",
     date: "2024-03-05",
-    url: "/articles/carbon-finance-trends"
+    url: "/reports/carbon-finance-trends"
   }
 ]
 
@@ -393,21 +393,21 @@ export default function Home() {
                 <h3 className="text-xl font-semibold text-gray-800 mb-3">公开报告</h3>
                 <Card className="p-3">
                   <div className="space-y-2">
-                    {articles.slice(0, 2).map((article) => (
+                    {reports.slice(0, 2).map((report) => (
                       <a
-                        key={article.id}
-                        href={article.url}
+                        key={report.id}
+                        href={report.url}
                         className="block py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors"
                       >
                         <div className="flex justify-between items-center">
-                          <h4 className="text-gray-800 font-medium text-sm">{article.title}</h4>
+                          <h4 className="text-gray-800 font-medium text-sm">{report.title}</h4>
                         </div>
                       </a>
                     ))}
                   </div>
                   <div className="mt-3 pt-3 border-t">
                     <Link
-                      href="/articles"
+                      href="/reports"
                       className="flex items-center justify-center text-blue-600 hover:text-blue-800 transition-colors text-sm"
                     >
                       <span>查看更多报告</span>
