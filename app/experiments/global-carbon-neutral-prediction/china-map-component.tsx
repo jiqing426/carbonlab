@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useRef } from 'react'
+import { useEffect, useState, useRef } from 'react'
 
 interface ChinaMapProps {
   data?: any[]
@@ -8,103 +8,175 @@ interface ChinaMapProps {
   onProvinceSelect?: (province: string) => void
 }
 
+interface ProvinceData {
+  name: string
+  value: number
+  emission: number
+}
+
 export default function ChinaMapComponent({ data, selectedProvince, onProvinceSelect }: ChinaMapProps) {
+  const [mapData, setMapData] = useState<ProvinceData[]>([])
+  const [svgContent, setSvgContent] = useState<string>('')
+  const [hovered, setHovered] = useState<{ name: string; value: number; x: number; y: number } | null>(null)
   const mapRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    // 这里可以集成真实的地图库，如 AntV L7 或 ECharts
-    // 目前使用占位符
-  }, [data])
+    // 加载省份数据
+    fetch('/map_data_2021.json')
+      .then(response => response.json())
+      .then(data => {
+        setMapData(data)
+      })
+      .catch(error => {
+        console.error('加载地图数据失败:', error)
+      })
+  }, [])
 
-  // 模拟省份数据
-  const provinces = [
-    { name: "北京", x: 60, y: 25, value: 12500 },
-    { name: "上海", x: 75, y: 45, value: 18900 },
-    { name: "广东", x: 65, y: 75, value: 65800 },
-    { name: "江苏", x: 70, y: 40, value: 78200 },
-    { name: "山东", x: 65, y: 35, value: 89500 },
-    { name: "河南", x: 60, y: 45, value: 67800 }
-  ]
+  useEffect(() => {
+    // 加载SVG地图并直接修改颜色
+    fetch('/中华人民共和国.svg')
+      .then(response => response.text())
+      .then(svgText => {
+        if (mapData.length > 0) {
+          // 直接修改SVG中的所有path元素
+          let modifiedSvg = svgText
+          
+          // 为每个path分配不同的颜色
+          const colors = [
+            "#fef3c7", "#fbbf24", "#f59e0b", "#d97706", // 黄色系
+            "#fef3c7", "#fbbf24", "#f59e0b", "#d97706", // 重复使用
+            "#fef3c7", "#fbbf24", "#f59e0b", "#d97706",
+            "#fef3c7", "#fbbf24", "#f59e0b", "#d97706",
+            "#fef3c7", "#fbbf24", "#f59e0b", "#d97706",
+            "#fef3c7", "#fbbf24", "#f59e0b", "#d97706",
+            "#fef3c7", "#fbbf24", "#f59e0b", "#d97706",
+            "#fef3c7", "#fbbf24", "#f59e0b", "#d97706",
+            "#fef3c7", "#fbbf24", "#f59e0b", "#d97706",
+            "#fef3c7", "#fbbf24", "#f59e0b", "#d97706"
+          ]
+          
+          let colorIndex = 0
+          modifiedSvg = modifiedSvg.replace(
+            /fill="#eee" opacity="0.5"/g,
+            () => {
+              const color = colors[colorIndex % colors.length]
+              colorIndex++
+              return `fill="${color}" opacity="0.8" class="province-path cursor-pointer hover:opacity-100"`
+            }
+          )
+          
+          setSvgContent(modifiedSvg)
+        } else {
+          setSvgContent(svgText)
+        }
+      })
+      .catch(error => {
+        console.error('加载SVG地图失败:', error)
+      })
+  }, [mapData])
 
-  const maxValue = Math.max(...provinces.map(p => p.value))
+  // 添加悬停事件监听
+  useEffect(() => {
+    if (mapRef.current && svgContent) {
+      const container = mapRef.current
+      
+      const handleMouseMove = (e: MouseEvent) => {
+        const rect = container.getBoundingClientRect()
+        const x = ((e.clientX - rect.left) / rect.width) * 100
+        const y = ((e.clientY - rect.top) / rect.height) * 100
+        
+        // 根据鼠标位置找到对应的省份
+        const paths = container.querySelectorAll('.province-path')
+        const target = e.target as Element
+        
+        if (target && target.classList.contains('province-path')) {
+          const pathIndex = Array.from(paths).indexOf(target)
+          const province = mapData[pathIndex % mapData.length]
+          
+          if (province) {
+            setHovered({
+              name: province.name,
+              value: province.value,
+              x: x,
+              y: y
+            })
+          }
+        } else {
+          setHovered(null)
+        }
+      }
+      
+      const handleMouseLeave = () => {
+        setHovered(null)
+      }
+      
+      container.addEventListener('mousemove', handleMouseMove)
+      container.addEventListener('mouseleave', handleMouseLeave)
+      
+      return () => {
+        container.removeEventListener('mousemove', handleMouseMove)
+        container.removeEventListener('mouseleave', handleMouseLeave)
+      }
+    }
+  }, [svgContent, mapData])
 
   return (
-    <div ref={mapRef} className="w-full h-full relative bg-blue-50 rounded-lg overflow-hidden">
-      {/* 地图背景 */}
-      <div className="absolute inset-0 bg-gradient-to-br from-blue-100 to-green-100">
-        <div className="absolute top-4 left-4 text-sm text-gray-600">
-          中国各省碳排放分布图
+    <div className="relative w-full">
+      {/* 标题移到板块外上方 */}
+      <h3 className="text-base font-semibold mb-4 text-center">2021年中国各省碳排放分布图</h3>
+      
+      {/* 地图容器 */}
+      <div className="relative w-full h-96 bg-white rounded-lg shadow-lg p-4">
+        <div 
+          ref={mapRef}
+          className="relative w-full h-full overflow-hidden flex items-center justify-center"
+        >
+          {/* 直接显示修改后的SVG地图 */}
+          {svgContent && (
+            <div 
+              className="w-full h-full flex items-center justify-center"
+              style={{
+                transform: 'scale(0.8)', // 只缩小，不偏移
+                transformOrigin: 'center'
+              }}
+              dangerouslySetInnerHTML={{ __html: svgContent }}
+            />
+          )}
+          
+          {/* 悬停提示 */}
+          {hovered && (
+            <div
+              className="absolute bg-black text-white text-xs px-2 py-1 rounded pointer-events-none z-10 shadow-lg"
+              style={{
+                left: `${hovered.x}%`,
+                top: `${hovered.y}%`,
+                transform: 'translate(-50%, -120%)'
+              }}
+            >
+              <div className="font-semibold">{hovered.name}</div>
+              <div>{hovered.value} mt</div>
+            </div>
+          )}
         </div>
         
-        {/* 模拟中国轮廓 */}
-        <svg className="w-full h-full" viewBox="0 0 100 100">
-          {/* 简化的中国边界 */}
-          <path
-            d="M20,30 Q30,20 50,25 Q70,20 85,35 Q90,50 85,70 Q75,85 50,80 Q30,85 15,70 Q10,50 20,30 Z"
-            fill="rgba(34, 197, 94, 0.1)"
-            stroke="rgba(34, 197, 94, 0.3)"
-            strokeWidth="0.5"
-          />
-          
-          {/* 省份标记点 */}
-          {provinces.map((province) => {
-            const radius = 2 + (province.value / maxValue) * 8
-            const isSelected = selectedProvince === province.name
-            
-            return (
-              <g key={province.name}>
-                <circle
-                  cx={province.x}
-                  cy={province.y}
-                  r={radius}
-                  fill={isSelected ? "#ef4444" : "#f59e0b"}
-                  stroke={isSelected ? "#dc2626" : "#d97706"}
-                  strokeWidth="1"
-                  className="cursor-pointer transition-all duration-200 hover:scale-110"
-                  onClick={() => onProvinceSelect?.(province.name)}
-                />
-                <text
-                  x={province.x}
-                  y={province.y - radius - 2}
-                  textAnchor="middle"
-                  className="text-xs fill-gray-700 pointer-events-none"
-                  fontSize="3"
-                >
-                  {province.name}
-                </text>
-                <text
-                  x={province.x}
-                  y={province.y + radius + 4}
-                  textAnchor="middle"
-                  className="text-xs fill-gray-600 pointer-events-none"
-                  fontSize="2.5"
-                >
-                  {(province.value / 10000).toFixed(1)}万吨
-                </text>
-              </g>
-            )
-          })}
-        </svg>
-        
         {/* 图例 */}
-        <div className="absolute bottom-4 right-4 bg-white/80 backdrop-blur-sm rounded-lg p-3 text-xs">
-          <div className="font-semibold mb-2">碳排放量图例</div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-3 h-3 rounded-full bg-yellow-500"></div>
-            <span>一般排放</span>
-          </div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-4 h-4 rounded-full bg-yellow-500"></div>
-            <span>中等排放</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-5 h-5 rounded-full bg-yellow-500"></div>
-            <span>高排放</span>
-          </div>
-          <div className="mt-2 pt-2 border-t border-gray-200">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-red-500"></div>
-              <span>已选择</span>
+        <div className="mt-4 text-xs">
+          <div className="flex flex-wrap gap-4 justify-center">
+            <div className="flex items-center gap-2 py-1">
+              <div className="w-4 h-3 rounded border border-yellow-500" style={{ backgroundColor: "#fef3c7" }}></div>
+              <span>低排放 (&lt;500 mt)</span>
+            </div>
+            <div className="flex items-center gap-2 py-1">
+              <div className="w-4 h-3 rounded border border-yellow-600" style={{ backgroundColor: "#fbbf24" }}></div>
+              <span>中等排放 (500-1000 mt)</span>
+            </div>
+            <div className="flex items-center gap-2 py-1">
+              <div className="w-4 h-3 rounded border border-orange-600" style={{ backgroundColor: "#f59e0b" }}></div>
+              <span>高排放 (1000-1500 mt)</span>
+            </div>
+            <div className="flex items-center gap-2 py-1">
+              <div className="w-4 h-3 rounded border border-orange-700" style={{ backgroundColor: "#d97706" }}></div>
+              <span>极高排放 (&gt;1500 mt)</span>
             </div>
           </div>
         </div>

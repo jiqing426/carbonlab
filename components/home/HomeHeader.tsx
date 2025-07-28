@@ -52,7 +52,7 @@ export default function HomeHeader() {
   }
 
   return (
-    <nav className="bg-green-50/80 shadow-sm sticky top-0 z-10">
+    <nav className="bg-green-50/80 shadow-sm sticky top-0 z-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
@@ -68,12 +68,6 @@ export default function HomeHeader() {
               className="px-3 py-2 rounded-md text-base font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
             >
               关于平台
-            </a>
-            <a
-              href="#news"
-              className="px-3 py-2 rounded-md text-base font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
-            >
-              双碳快讯
             </a>
             <a
               href="#categories"
@@ -92,6 +86,18 @@ export default function HomeHeader() {
               className="px-3 py-2 rounded-md text-base font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
             >
               热门实验
+            </a>
+            <a
+              href="#news"
+              className="px-3 py-2 rounded-md text-base font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
+            >
+              双碳快讯
+            </a>
+            <a
+              href="#insight"
+              className="px-3 py-2 rounded-md text-base font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
+            >
+              数智洞察
             </a>
             <form onSubmit={handleSearch} className="relative flex gap-2">
               <div className="relative">
@@ -151,12 +157,6 @@ export default function HomeHeader() {
             关于平台
           </a>
           <a
-            href="#news"
-            className="block px-3 py-2 rounded-md text-lg font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
-          >
-            双碳快讯
-          </a>
-          <a
             href="#categories"
             className="block px-3 py-2 rounded-md text-lg font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
           >
@@ -173,6 +173,18 @@ export default function HomeHeader() {
             className="block px-3 py-2 rounded-md text-lg font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
           >
             热门实验
+          </a>
+          <a
+            href="#news"
+            className="block px-3 py-2 rounded-md text-lg font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
+          >
+            双碳快讯
+          </a>
+          <a
+            href="#insight"
+            className="block px-3 py-2 rounded-md text-lg font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
+          >
+            数智洞察
           </a>
         </div>
       </div>

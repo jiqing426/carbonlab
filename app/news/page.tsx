@@ -67,45 +67,6 @@ const articles = [
   }
 ]
 
-const datasets = [
-  {
-    id: 1,
-    title: "全国碳排放权交易市场数据",
-    provider: "全国碳排放权交易市场",
-    updateTime: "2023-12-01",
-    description: "包含全国碳市场交易价格、成交量、履约情况等核心数据。",
-    format: "CSV, JSON",
-    url: "#"
-  },
-  {
-    id: 2,
-    title: "中国省级碳排放数据集",
-    provider: "中科院大气物理研究所",
-    updateTime: "2023-11-15",
-    description: "1997-2022年中国各省份分行业碳排放数据，支持学术研究使用。",
-    format: "Excel, NetCDF",
-    url: "#"
-  },
-  {
-    id: 3,
-    title: "全球碳预算数据",
-    provider: "Global Carbon Project",
-    updateTime: "2023-12-05",
-    description: "全球碳循环年度预算数据，包含化石燃料排放、土地利用变化等。",
-    format: "CSV, NetCDF",
-    url: "#"
-  },
-  {
-    id: 4,
-    title: "企业碳披露数据库",
-    provider: "CDP全球环境信息研究中心",
-    updateTime: "2023-10-30",
-    description: "全球主要企业的碳排放披露数据和气候行动信息。",
-    format: "Excel, API",
-    url: "#"
-  }
-]
-
 export default function NewsPage() {
   const [activeTab, setActiveTab] = useState("policies")
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -148,16 +109,16 @@ export default function NewsPage() {
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center space-x-4">
-            <Link 
-              href="/" 
-              className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
-            >
-              <ArrowLeft className="h-5 w-5 mr-2" />
-              返回首页
-            </Link>
-            <div className="h-6 w-px bg-gray-300"></div>
-            <h1 className="text-2xl font-bold text-gray-900">双碳快讯</h1>
+            <div className="flex items-center space-x-4">
+              <Link 
+                href="/" 
+                className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+              >
+                <ArrowLeft className="h-5 w-5 mr-2" />
+                返回首页
+              </Link>
+              <div className="h-6 w-px bg-gray-300"></div>
+              <h1 className="text-2xl font-bold text-gray-900">双碳快讯</h1>
           </div>
         </div>
       </div>
@@ -199,17 +160,6 @@ export default function NewsPage() {
               >
                 <Globe className="h-5 w-5 inline-block mr-2" />
                 公开文章
-              </button>
-              <button
-                onClick={() => setActiveTab("datasets")}
-                className={`py-4 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === "datasets"
-                    ? "border-blue-500 text-blue-600"
-                    : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
-                }`}
-              >
-                <BarChart3 className="h-5 w-5 inline-block mr-2" />
-                公开数据
               </button>
             </nav>
           </div>
@@ -295,48 +245,6 @@ export default function NewsPage() {
                         <div className="flex items-center">
                           <Calendar className="h-4 w-4 mr-1" />
                           {article.date}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Datasets Tab */}
-            {activeTab === "datasets" && (
-              <div className="space-y-6">
-                <div className="text-center mb-6">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2">公开数据</h3>
-                  <p className="text-gray-600">碳经济相关的公开数据集和统计资料</p>
-                </div>
-                <div className="grid gap-6">
-                  {datasets.map((dataset) => (
-                    <div key={dataset.id} className="border border-gray-200 rounded-lg p-6 hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between mb-3">
-                        <h4 className="text-lg font-semibold text-gray-900 flex-1">{dataset.title}</h4>
-                        <a 
-                          href={dataset.url}
-                          className="text-blue-600 hover:text-blue-800 transition-colors ml-4"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <ExternalLink className="h-4 w-4" />
-                        </a>
-                      </div>
-                      <p className="text-gray-600 mb-3">{dataset.description}</p>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-500">
-                        <div>
-                          <span className="font-medium">数据提供方：</span>
-                          {dataset.provider}
-                        </div>
-                        <div>
-                          <span className="font-medium">更新时间：</span>
-                          {dataset.updateTime}
-                        </div>
-                        <div>
-                          <span className="font-medium">数据格式：</span>
-                          {dataset.format}
                         </div>
                       </div>
                     </div>

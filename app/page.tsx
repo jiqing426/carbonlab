@@ -13,6 +13,7 @@ import Image from "next/image"
 import { BookOpen, FileText, BarChart3, Globe, ArrowRight, ChevronLeft, ChevronRight, CheckCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
+import { ChevronUp } from "lucide-react"
 
 // 获取模块背景样式
 const getModuleBgClass = (module: string) => {
@@ -153,6 +154,103 @@ const datasets = [
     url: "/data/carbon-price-index"
   }
 ]
+
+// 新版快讯区 mock 数据和组件
+const newsCarouselData = [
+  {
+    img: "https://picsum.photos/800/400?random=1",
+    tag: "重点新闻",
+    tagColor: "bg-blue-600",
+    title: "国家发改委发布《关于完善能源绿色低碳转型体制机制和政策措施的意见》",
+    desc: "该意见提出了完善能源绿色低碳转型体制机制和政策措施的总体要求、主要任务和保障措施，为实现碳达峰碳中和目标提供了重要支撑。",
+    date: "2025-07-15",
+    source: "国家发改委",
+    url: "#"
+  },
+  {
+    img: "https://picsum.photos/800/400?random=2",
+    tag: "政策解读",
+    tagColor: "bg-green-500",
+    title: "《碳排放权交易管理办法（试行）》修订版解读：新变化与企业应对策略",
+    desc: "本文详细解读了《碳排放权交易管理办法（试行）》修订版的主要变化，分析了其对企业的影响，并提出了相应的应对策略。",
+    date: "2025-07-10",
+    source: "碳中和研究院",
+    url: "#"
+  }
+]
+
+const latestPolicies = [
+  { title: "生态环境部发布《关于做好2025年碳排放权交易市场数据质量监督管理相关工作的通知》", date: "2025-07-18", source: "生态环境部", url: "#" },
+  { title: "工信部：加快推进工业领域碳达峰碳中和，大力发展绿色制造", date: "2025-07-16", source: "工业和信息化部", url: "#" },
+  { title: "财政部：加大对绿色低碳产业的财政支持力度，完善相关财税政策", date: "2025-07-12", source: "财政部", url: "#" },
+  { title: "《中国碳达峰碳中和进展报告（2025）》正式发布", date: "2025-07-08", source: "国务院发展研究中心", url: "#" },
+  { title: "国家能源局：2025年非化石能源占能源消费总量比重提高到18%左右", date: "2025-07-05", source: "国家能源局", url: "#" },
+]
+const hotNews = [
+  { title: "全球碳市场发展趋势与中国碳市场建设研讨会在京召开", url: "#" },
+  { title: "首批国家级绿色供应链管理企业名单公布，多家企业入选", url: "#" },
+  { title: "全国碳市场上线交易一周年：累计成交额突破200亿元", url: "#" },
+  { title: "中国首单绿色资产支持商业票据（ABCP）成功发行", url: "#" },
+  { title: "多部门联合发布《关于促进新时代新能源高质量发展的实施方案》", url: "#" },
+]
+const reportCovers = [
+  { img: "https://picsum.photos/300/400?random=3", title: "2025中国碳市场年度发展报告", date: "2025-06-30" },
+  { img: "https://picsum.photos/300/400?random=4", title: "重点行业碳排放核算与报告指南", date: "2025-06-15" },
+  { img: "https://picsum.photos/300/400?random=5", title: "企业碳中和路径与实践案例研究", date: "2025-05-28" },
+  { img: "https://picsum.photos/300/400?random=6", title: "区域碳达峰碳中和实施路径研究", date: "2025-05-10" },
+]
+const dataCards = [
+  { label: "全国碳市场", value: "2.15 亿吨", trend: "较上月增长 3.2%", bg: "bg-gradient-to-br from-blue-50 to-indigo-50", icon: <BarChart3 className="h-5 w-5" />, iconBg: "bg-blue-100", iconColor: "text-blue-600" },
+  { label: "可再生能源", value: "42.8%", trend: "占比创新高", bg: "bg-gradient-to-br from-green-50 to-teal-50", icon: <Globe className="h-5 w-5" />, iconBg: "bg-green-100", iconColor: "text-green-600" },
+  { label: "绿色债券", value: "8,765 亿元", trend: "同比增长 21.3%", bg: "bg-gradient-to-br from-orange-50 to-amber-50", icon: <FileText className="h-5 w-5" />, iconBg: "bg-amber-100", iconColor: "text-amber-500" },
+  { label: "碳足迹认证", value: "1,243 家", trend: "新增 156 家", bg: "bg-gradient-to-br from-purple-50 to-pink-50", icon: <ChevronUp className="h-5 w-5" />, iconBg: "bg-purple-100", iconColor: "text-purple-500" },
+]
+const latestData = [
+  { title: "2025年6月全国及各省区市能源生产情况", desc: "原煤、原油、天然气生产及发电情况", tag: "最新发布", date: "2025-07-18", source: "国家统计局", url: "#" },
+  { title: "重点行业碳排放监测周报（7.10-7.16）", desc: "钢铁、电力、建材等行业碳排放数据", tag: "监测数据", date: "2025-07-17", source: "生态环境部", url: "#" },
+  { title: "2025年第二季度中国碳价指数报告", desc: "全国及区域碳市场价格走势分析", tag: "研究报告", date: "2025-07-15", source: "清华大学能源环境经济研究所", url: "#" },
+  { title: "中国绿色金融发展报告（2025年上半年）", desc: "绿色信贷、绿色债券、碳金融等发展情况", tag: "行业报告", date: "2025-07-10", source: "中国人民银行", url: "#" },
+]
+
+function NewsCarousel() {
+  const [current, setCurrent] = useState(0)
+  useEffect(() => {
+    const timer = setInterval(() => setCurrent((prev) => (prev + 1) % newsCarouselData.length), 5000)
+    return () => clearInterval(timer)
+  }, [])
+  return (
+    <div className="lg:col-span-2 relative rounded-xl overflow-hidden shadow-md h-[400px]">
+      {newsCarouselData.map((item, idx) => (
+        <div key={idx} className={`carousel-item absolute inset-0 transition-opacity duration-1000 ${current === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
+          <img src={item.img} alt={item.title} className="w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
+            <span className={`text-white text-xs px-3 py-1 rounded-full inline-block mb-3 w-fit ${item.tagColor}`}>{item.tag}</span>
+            <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
+            <p className="text-white/80 text-sm mb-3 line-clamp-2">{item.desc}</p>
+            <div className="flex items-center text-white/60 text-xs">
+              <span>{item.date}</span>
+              <span className="mx-2">•</span>
+              <span>{item.source}</span>
+            </div>
+          </div>
+        </div>
+      ))}
+      {/* 指示器 */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex space-x-2 z-20">
+        {newsCarouselData.map((_, idx) => (
+          <button key={idx} onClick={() => setCurrent(idx)} className={`w-3 h-3 rounded-full bg-white/50 cursor-pointer transition-all duration-300 ${current === idx ? 'w-8 bg-blue-600' : ''}`}></button>
+        ))}
+      </div>
+      {/* 控制按钮 */}
+      <button onClick={() => setCurrent((current - 1 + newsCarouselData.length) % newsCarouselData.length)} className="carousel-control prev absolute top-1/2 left-4 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 text-white flex items-center justify-center hover:bg-blue-600 transition-colors z-20">
+        <ChevronLeft className="h-5 w-5" />
+      </button>
+      <button onClick={() => setCurrent((current + 1) % newsCarouselData.length)} className="carousel-control next absolute top-1/2 right-4 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 text-white flex items-center justify-center hover:bg-blue-600 transition-colors z-20">
+        <ChevronRight className="h-5 w-5" />
+      </button>
+    </div>
+  )
+}
 
 export default function Home() {
   const [courses, setCourses] = useState<any[]>([]);
@@ -324,129 +422,132 @@ export default function Home() {
         </section>
 
 
-        {/* 双碳快讯 */}
-        <section id="news" className="py-9 bg-gray-50">
-          <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">双碳快讯</h2>
-          <div className="grid grid-cols-1 lg:grid-cols-5 gap-8">
-            {/* 左侧：政策法规轮播 */}
-            <div className="lg:col-span-3 space-y-4">
-              <div className="relative">
-                <div
-                  className="relative h-[400px] rounded-lg overflow-hidden"
-                  onMouseEnter={() => setIsHovering(true)}
-                  onMouseLeave={() => setIsHovering(false)}
-                >
-                  {policySlides.map((slide, index) => (
-                    <div
-                      key={slide.id}
-                      className={`absolute inset-0 transition-opacity duration-500 ${index === currentSlide ? "opacity-100" : "opacity-0"
-                        }`}
-                      onClick={handleSlideClick}
-                      style={{ cursor: 'pointer' }}
-                    >
-                      <img
-                        src={slide.image}
-                        alt={slide.title}
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute bottom-0 left-0 right-0 bg-black/60 text-white p-4">
-                        <h3 className="text-lg font-semibold mb-2">{slide.title}</h3>
-                        <p className="text-sm">{slide.description}</p>
+        {/* 双碳快讯（新版） */}
+        <section id="news" className="mb-12">
+          {/* 双碳快讯板块 */}
+          <div className="mb-6">
+            <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">双碳快讯</h2>
+          </div>
+          <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+            {/* 左侧重点新闻轮播 */}
+            <div className="lg:col-span-3">
+              <NewsCarousel />
+            </div>
+            {/* 右侧政策新闻列表 */}
+            <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6 flex flex-col lg:h-[400px] lg:overflow-y-auto">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-lg">最新政策</h3>
+                <Link href="/news" className="text-blue-600 text-sm hover:underline">更多</Link>
+              </div>
+              <ul className="space-y-4">
+                {latestPolicies.map((item, idx) => (
+                  <li key={idx} className="pb-4 border-b border-gray-100">
+                    <a href={item.url} className="transition-all duration-300 hover:text-blue-600 hover:underline">
+                      <h4 className="font-medium mb-1">{item.title}</h4>
+                      <div className="flex justify-between items-center text-xs text-gray-400">
+                        <span>{item.date}</span>
+                        <span>{item.source}</span>
                       </div>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+              <div className="flex justify-between items-center mt-8 mb-4">
+                <h3 className="font-bold text-lg">热点新闻</h3>
+                <Link href="/news" className="text-blue-600 text-sm hover:underline">更多</Link>
+              </div>
+              <ul className="space-y-3">
+                {hotNews.map((item, idx) => (
+                  <li key={idx}>
+                    <a href={item.url} className="flex items-start transition-all duration-300 hover:text-blue-600 hover:underline">
+                      <span className={`w-6 h-6 rounded-full flex items-center justify-center mr-3 flex-shrink-0 ${idx < 3 ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'} text-xs`}>{idx + 1}</span>
+                      <span>{item.title}</span>
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+          {/* 数智洞察板块 */}
+          <section id="insight" className="mt-12 mb-6">
+            <div className="mb-6">
+              <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">数智洞察</h2>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* 左侧报告封面展示 */}
+              <div className="lg:col-span-1 bg-white rounded-xl shadow-sm p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-lg">研究报告</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {reportCovers.map((report, idx) => (
+                    <div key={idx} className="rounded-lg overflow-hidden shadow card-hover">
+                      <div className="aspect-[3/4] bg-gray-100 relative">
+                        <img src={report.img} alt={report.title} className="w-full h-full object-cover" />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <Button size="sm" className="bg-white text-blue-600 px-4 py-2 rounded-full text-sm font-medium">
+                            <FileText className="mr-1 h-4 w-4" /> 下载
+                          </Button>
+                        </div>
+                      </div>
+                      <h4 className="mt-2 text-sm font-medium line-clamp-2">{report.title}</h4>
+                      <p className="text-xs text-gray-400">{report.date}</p>
                     </div>
                   ))}
                 </div>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white"
-                  onClick={handlePrevSlide}
-                >
-                  <ChevronLeft className="h-6 w-6" />
-                </Button>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 hover:bg-white"
-                  onClick={handleNextSlide}
-                >
-                  <ChevronRight className="h-6 w-6" />
-                </Button>
+                <div className="mt-6 flex justify-center">
+                  <Link href="/reports">
+                    <Button variant="outline" className="border-green-500 text-green-600 rounded-full text-sm hover:bg-green-500 hover:text-white transition-colors px-4 py-2">
+                      查看更多报告
+                    </Button>
+                  </Link>
+                </div>
               </div>
-              {/* 底部切换栏 - 移到图片外部 */}
-              <div className="flex justify-center space-x-2 mt-2">
-                {policySlides.map((_, index) => (
-                  <button
-                    key={index}
-                    onClick={() => setCurrentSlide(index)}
-                    className={`h-1 transition-all duration-300 ${index === currentSlide ? "w-8 bg-gray-800" : "w-4 bg-gray-300"
-                      }`}
-                  />
-                ))}
+              {/* 右侧数据条目 */}
+              <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
+                <div className="flex justify-between items-center mb-4">
+                  <h3 className="font-bold text-lg">数据洞察</h3>
+                  <Link href="/datasets" className="text-green-600 text-sm hover:underline">更多</Link>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  {dataCards.map((card, idx) => {
+                    return (
+                      <div key={idx} className={`rounded-lg p-4 card-hover flex flex-col justify-center items-center ${card.bg}`}> 
+                        <p className="text-gray-400 text-sm">{card.label}</p>
+                        <h4 className="text-2xl font-bold mt-1">{card.value}</h4>
+                        <p className="text-green-500 text-xs mt-1 flex items-center">
+                          <ChevronUp className="mr-1 h-3 w-3" />{card.trend}
+                        </p>
+                      </div>
+                    )
+                  })}
+                </div>
+                <div className="mb-6">
+                  <h4 className="font-bold text-xl mb-4 flex items-center">
+                    <BarChart3 className="text-green-600 mr-2 h-4 w-4" /> 最新数据发布
+                  </h4>
+                  <ul className="space-y-4">
+                    {latestData.map((item, idx) => (
+                      <li key={idx} className="pb-3 border-b border-gray-100">
+                        <a href={item.url} className="flex justify-between items-start transition-all duration-300 hover:text-green-600 hover:underline">
+                          <div>
+                            <h5 className="font-medium">{item.title}</h5>
+                            <p className="text-sm text-gray-400 mt-1">{item.desc}</p>
+                          </div>
+                          <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">{item.tag}</span>
+                        </a>
+                        <div className="flex justify-between items-center mt-2 text-xs text-gray-400">
+                          <span>{item.date}</span>
+                          <span>{item.source}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                {/* 可选：数据可视化区，可后续补充 */}
               </div>
             </div>
-
-            {/* 右侧：公开文章和公开数据 */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* 公开报告 */}
-              <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-3">公开报告</h3>
-                <Card className="p-3">
-                  <div className="space-y-2">
-                    {reports.slice(0, 2).map((report) => (
-                      <a
-                        key={report.id}
-                        href={report.url}
-                        className="block py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors"
-                      >
-                        <div className="flex justify-between items-center">
-                          <h4 className="text-gray-800 font-medium text-sm">{report.title}</h4>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                  <div className="mt-3 pt-3 border-t">
-                    <Link
-                      href="/reports"
-                      className="flex items-center justify-center text-blue-600 hover:text-blue-800 transition-colors text-sm"
-                    >
-                      <span>查看更多报告</span>
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Link>
-                  </div>
-                </Card>
-              </div>
-
-              {/* 公开数据 */}
-              <div>
-                <h3 className="text-xl font-semibold text-gray-800 mb-3">公开数据</h3>
-                <Card className="p-3">
-                  <div className="space-y-2">
-                    {datasets.slice(0, 2).map((dataset) => (
-                      <a
-                        key={dataset.id}
-                        href={dataset.url}
-                        className="block py-2 px-3 hover:bg-gray-50 rounded-lg transition-colors"
-                      >
-                        <div className="flex justify-between items-center">
-                          <h4 className="text-gray-800 font-medium text-sm">{dataset.title}</h4>
-                        </div>
-                      </a>
-                    ))}
-                  </div>
-                  <div className="mt-3 pt-3 border-t">
-                    <Link
-                      href="/datasets"
-                      className="flex items-center justify-center text-blue-600 hover:text-blue-800 transition-colors text-sm"
-                    >
-                      <span>查看更多数据</span>
-                      <ArrowRight className="h-4 w-4 ml-2" />
-                    </Link>
-                  </div>
-                </Card>
-              </div>
-            </div>
-          </div>
+          </section>
         </section>
 
         {/* 关于平台 */}
