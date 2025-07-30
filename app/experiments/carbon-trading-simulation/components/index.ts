@@ -91,7 +91,7 @@ export interface CompanyState {
   // 碳配额管理
   carbonAllowances: CarbonAllowance[]
   
-  // 游戏状态
+  // 经营状态
   currentYear: number
   currentQuarter: number
   gameOver: boolean

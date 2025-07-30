@@ -1,3 +1,5 @@
+import { useState } from "react"
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -9,29 +11,54 @@ interface ESGReportStepProps {
   simulationData: SimulationData
   onPrevious: () => void
   onComplete: () => void
+  yearlyRecords: any[]
+  upgradeHistory: any[]
 }
 
-export function ESGReportStep({ simulationData, onPrevious, onComplete }: ESGReportStepProps) {
+export function ESGReportStep({ simulationData, onPrevious, onComplete, yearlyRecords, upgradeHistory }: ESGReportStepProps) {
   const { companyState } = simulationData
+  const [showFinishDialog, setShowFinishDialog] = useState(false)
 
-  // 计算ESG评分
+  // 计算关键指标
+  const totalProfit = yearlyRecords.reduce((sum, y) => sum + (y.yearlyProfit || 0), 0)
+  const finalCash = yearlyRecords.length > 0 ? yearlyRecords[yearlyRecords.length - 1].cashAsset : 0
+  const totalCarbonEmission = yearlyRecords.reduce((sum, y) => sum + (y.carbonEmission || 0), 0)
+  const totalAllowance = yearlyRecords.reduce((sum, y) => sum + (y.carbonAllowance || 0), 0)
+  const totalUpgradeInvest = yearlyRecords.reduce((sum, y) => sum + (y.energyUpgradeCount * 250000 + y.emissionUpgradeCount * 200000), 0)
+  const totalEnergyUpgradeCount = upgradeHistory.filter(u => u.type === 'energy').reduce((sum, u) => sum + (u.toLevel - u.fromLevel), 0)
+  const totalEmissionUpgradeCount = upgradeHistory.filter(u => u.type === 'emission').reduce((sum, u) => sum + (u.toLevel - u.fromLevel), 0)
+  const totalAllowanceTraded = yearlyRecords.reduce((sum, y) => sum + (y.quotaIncome || 0), 0)
+  const avgCarbonLabel = yearlyRecords.length > 0 ? (yearlyRecords.reduce((sum, y) => sum + (y.productCarbonLabel || 0), 0) / yearlyRecords.length) : 0
+
+  // 基于经营模拟结果计算ESG评分
   const calculateESGScore = () => {
-    // 环境评分 (E) - 基于碳减排和技术升级
-    const totalUpgrades = companyState.productionUpgrades.energy + companyState.productionUpgrades.emission
-    const carbonReduction = ((10 - companyState.currentEmissionPerUnit) / 5) * 100
-    const energyEfficiency = ((10 - companyState.currentEnergyPerUnit) / 5) * 100
-    const environmentScore = Math.min(100, (carbonReduction + energyEfficiency + totalUpgrades * 10) / 3)
+    if (yearlyRecords.length === 0) {
+      return {
+        environment: 50,
+        social: 50,
+        governance: 50,
+        overall: 50
+      }
+    }
 
-    // 社会评分 (S) - 基于经营稳定性和可持续发展
-    const operationalYears = Math.min(companyState.currentYear, 5)
-    const financialStability = companyState.funds > 0 ? 100 : 50
-    const sustainabilityScore = (operationalYears / 5) * 100
-    const socialScore = (financialStability + sustainabilityScore) / 2
+    // 环境评分 (E) - 基于碳减排、技术升级、配额管理
+    const carbonCompliance = totalCarbonEmission <= totalAllowance ? 100 : Math.max(0, 100 - ((totalCarbonEmission - totalAllowance) / totalAllowance) * 100)
+    const upgradeScore = Math.min(100, (totalEnergyUpgradeCount + totalEmissionUpgradeCount) * 25) // 最多4次升级
+    const carbonIntensityScore = Math.max(0, 100 - (avgCarbonLabel / 120000) * 100) // 基于产品碳标签
+    const environmentScore = Math.round((carbonCompliance + upgradeScore + carbonIntensityScore) / 3)
 
-    // 治理评分 (G) - 基于规划执行和风险管理
-    const planningEfficiency = companyState.quarterlyRecords.length > 0 ? 85 : 50
-    const riskManagement = companyState.gameOver ? 60 : 90
-    const governanceScore = (planningEfficiency + riskManagement) / 2
+    // 社会评分 (S) - 基于经营稳定性、可持续发展、社会责任
+    const financialStability = finalCash >= 0 ? 100 : Math.max(0, 100 + (finalCash / 1000000) * 100)
+    const sustainabilityScore = totalUpgradeInvest > 0 ? 100 : 50
+    const operationalYears = Math.min(yearlyRecords.length, 5)
+    const operationalScore = (operationalYears / 5) * 100
+    const socialScore = Math.round((financialStability + sustainabilityScore + operationalScore) / 3)
+
+    // 治理评分 (G) - 基于风险管理、决策执行、长期规划
+    const riskManagement = finalCash > 1000000 ? 100 : finalCash > 500000 ? 80 : finalCash > 0 ? 60 : 30
+    const planningScore = totalUpgradeInvest > 0 ? 100 : 60
+    const tradingScore = totalAllowanceTraded > 0 ? 100 : 70
+    const governanceScore = Math.round((riskManagement + planningScore + tradingScore) / 3)
 
     const overallScore = (environmentScore + socialScore + governanceScore) / 3
 
@@ -57,55 +84,119 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete }: ESGRep
 
   const overallRating = getESGRating(esgScore.overall)
 
-  // 计算碳足迹数据
+  // 基于经营模拟结果计算碳足迹数据
   const calculateCarbonFootprint = () => {
-    const totalEmissions = companyState.quarterlyRecords.reduce((sum, record) => sum + record.carbonEmitted, 0)
-    const totalProduction = companyState.quarterlyRecords.reduce((sum, record) => sum + record.productsProduced, 0)
+    if (yearlyRecords.length === 0) {
+      return {
+        totalEmissions: 0,
+        totalProduction: 0,
+        carbonIntensity: 0,
+        reductionRate: 0
+      }
+    }
+
+    const totalEmissions = yearlyRecords.reduce((sum, y) => sum + (y.carbonEmission || 0), 0)
+    const totalProduction = yearlyRecords.reduce((sum, y) => sum + (y.productionQuantity || 0), 0)
     const carbonIntensity = totalProduction > 0 ? totalEmissions / totalProduction : 0
+    const totalAllowance = yearlyRecords.reduce((sum, y) => sum + (y.carbonAllowance || 0), 0)
+    const reductionRate = totalAllowance > 0 ? Math.max(0, ((totalAllowance - totalEmissions) / totalAllowance) * 100) : 0
     
     return {
       totalEmissions,
       totalProduction,
       carbonIntensity: Math.round(carbonIntensity * 100) / 100,
-      reductionRate: Math.round(((10 - companyState.currentEmissionPerUnit) / 10) * 100)
+      reductionRate: Math.round(reductionRate)
     }
   }
 
   const carbonData = calculateCarbonFootprint()
 
-  // 生成改进建议
+  // 基于经营模拟结果生成改进建议
   const generateRecommendations = () => {
     const recommendations = []
     
+    if (yearlyRecords.length === 0) {
+      return [
+        {
+          category: "环境",
+          priority: "高",
+          suggestion: "开始进行碳减排技改投资"
+        },
+        {
+          category: "社会",
+          priority: "中",
+          suggestion: "建立稳定的经营策略"
+        },
+        {
+          category: "治理",
+          priority: "中",
+          suggestion: "完善风险管理体系"
+        }
+      ]
+    }
+
+    const totalProfit = yearlyRecords.reduce((sum, y) => sum + (y.yearlyProfit || 0), 0)
+    const finalCash = yearlyRecords.length > 0 ? yearlyRecords[yearlyRecords.length - 1].cashAsset : 0
+    const totalCarbonEmission = yearlyRecords.reduce((sum, y) => sum + (y.carbonEmission || 0), 0)
+    const totalAllowance = yearlyRecords.reduce((sum, y) => sum + (y.carbonAllowance || 0), 0)
+    const totalUpgradeInvest = yearlyRecords.reduce((sum, y) => sum + (y.energyUpgradeCount * 250000 + y.emissionUpgradeCount * 200000), 0)
+    
     if (esgScore.environment < 70) {
-      recommendations.push({
-        category: "环境",
-        priority: "高",
-        suggestion: "加大清洁技术投资，进一步降低碳排放强度"
-      })
+      if (totalCarbonEmission > totalAllowance) {
+        recommendations.push({
+          category: "环境",
+          priority: "高",
+          suggestion: "加强碳减排措施，避免超排罚款"
+        })
+      }
+      if (totalUpgradeInvest === 0) {
+        recommendations.push({
+          category: "环境",
+          priority: "高",
+          suggestion: "加大清洁技术投资，降低碳排放强度"
+        })
+      }
     }
     
     if (esgScore.social < 70) {
-      recommendations.push({
-        category: "社会",
-        priority: "中",
-        suggestion: "提升经营稳定性，确保可持续发展能力"
-      })
+      if (finalCash < 0) {
+        recommendations.push({
+          category: "社会",
+          priority: "高",
+          suggestion: "改善财务状况，避免破产风险"
+        })
+      }
+      if (totalProfit < 0) {
+        recommendations.push({
+          category: "社会",
+          priority: "中",
+          suggestion: "优化经营策略，提高盈利能力"
+        })
+      }
     }
     
     if (esgScore.governance < 70) {
-      recommendations.push({
-        category: "治理",
-        priority: "中",
-        suggestion: "完善风险管理体系，提高决策执行效率"
-      })
+      if (finalCash < 500000) {
+        recommendations.push({
+          category: "治理",
+          priority: "高",
+          suggestion: "加强风险管理，建立资金预警机制"
+        })
+      }
+      if (totalUpgradeInvest === 0) {
+        recommendations.push({
+          category: "治理",
+          priority: "中",
+          suggestion: "制定长期发展规划，提升决策执行效率"
+        })
+      }
     }
-    
-    if (companyState.funds < 100) {
+
+    if (recommendations.length === 0) {
       recommendations.push({
-        category: "财务",
-        priority: "高",
-        suggestion: "优化资金配置，提高投资回报率"
+        category: "综合",
+        priority: "低",
+        suggestion: "继续保持当前ESG表现，持续优化"
       })
     }
 
@@ -113,6 +204,97 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete }: ESGRep
   }
 
   const recommendations = generateRecommendations()
+
+  // 下载ESG报告功能 - 使用pdfmake生成PDF，支持中文
+  const downloadESGReport = async () => {
+    try {
+      if (typeof window === 'undefined') return; // 只在浏览器端执行
+      // 动态引入pdfmake及字体
+      // @ts-expect-error: pdfmake无类型声明，忽略类型检查
+      const pdfMake = (await import('pdfmake/build/pdfmake')).default;
+      // @ts-expect-error: pdfmake无类型声明，忽略类型检查
+      const pdfFonts = (await import('pdfmake/build/vfs_fonts')).default;
+      pdfMake.vfs = pdfFonts.vfs;
+
+      const docDefinition = {
+        content: [
+          { text: '企业ESG绩效评估报告', style: 'header', alignment: 'center' },
+          { text: `报告日期：${new Date().toLocaleDateString('zh-CN')}`, margin: [0, 10, 0, 0] },
+          { text: `综合评级：${overallRating.rating}级` },
+          { text: `综合评分：${esgScore.overall}分`, margin: [0, 0, 0, 10] },
+          { text: '一、ESG评分概览', style: 'subheader' },
+          `环境评分 (E)：${esgScore.environment}分`,
+          `社会评分 (S)：${esgScore.social}分`,
+          `治理评分 (G)：${esgScore.governance}分`,
+          { text: '二、环境绩效指标', style: 'subheader' },
+          `总碳排放：${carbonData.totalEmissions.toLocaleString()} kg`,
+          `碳强度：${carbonData.carbonIntensity.toLocaleString()} kg/产品`,
+          `碳配额使用率：${totalAllowance > 0 ? Math.round((totalCarbonEmission / totalAllowance) * 100) : 0}%`,
+          `技改投资总额：${totalUpgradeInvest.toLocaleString()} 元`,
+          `节能技改次数：${totalEnergyUpgradeCount} 次`,
+          `减排技改次数：${totalEmissionUpgradeCount} 次`,
+          `平均产品碳标签：${avgCarbonLabel.toFixed(2)} kg/个`,
+          `配额交易收入：${totalAllowanceTraded.toLocaleString()} 元`,
+          { text: '三、社会与治理绩效', style: 'subheader' },
+          `经营年限：${Math.min(yearlyRecords.length, 5)}/5年`,
+          `最终现金：${finalCash.toLocaleString()} 元`,
+          `累计利润：${totalProfit.toLocaleString()} 元`,
+          `财务状况：${finalCash >= 0 ? '健康' : '困难'}`,
+          `碳合规性：${totalCarbonEmission <= totalAllowance ? '合规' : '超排'}`,
+          `技术升级：${totalUpgradeInvest > 0 ? '已投资' : '未投资'}`,
+          `配额交易：${totalAllowanceTraded > 0 ? '已开展' : '未开展'}`,
+          { text: '四、年度经营记录', style: 'subheader' },
+          ...yearlyRecords.map((record: any) => (
+            [
+              { text: `第${record.year}年：`, margin: [0, 5, 0, 0], bold: true },
+              `- 生产数量：${record.productionQuantity} 个`,
+              `- 年度利润：${record.yearlyProfit.toLocaleString()} 元`,
+              `- 现金资产：${record.cashAsset.toLocaleString()} 元`,
+              `- 碳排放：${record.carbonEmission.toLocaleString()} kg`,
+              `- 碳配额：${record.carbonAllowance.toLocaleString()} kg`,
+              `- 配额结余：${record.quotaBalance.toLocaleString()} kg`,
+              `- 配额收入：${record.quotaIncome.toLocaleString()} 元`,
+            ]
+          )).flat(),
+          { text: '五、技术升级历史', style: 'subheader' },
+          ...upgradeHistory.map((upgrade: any, index: number) => (
+            [
+              { text: `${index + 1}. 第${upgrade.year}年${upgrade.type === 'energy' ? '节能' : '减排'}技改`, margin: [0, 5, 0, 0], bold: true },
+              `   - 升级前等级：${upgrade.fromLevel}`,
+              `   - 升级后等级：${upgrade.toLevel}`,
+              `   - 投资金额：${upgrade.cost.toLocaleString()} 元`,
+            ]
+          )).flat(),
+          { text: '六、ESG改进建议', style: 'subheader' },
+          ...recommendations.map((rec: any, index: number) => (
+            [
+              { text: `${index + 1}. [${rec.priority}优先级] ${rec.category}`, margin: [0, 5, 0, 0], bold: true },
+              `   建议：${rec.suggestion}`,
+            ]
+          )).flat(),
+          { text: '七、发展前景', style: 'subheader' },
+          `基于当前ESG绩效表现，企业在可持续发展方面展现了${overallRating.rating}级水平。${yearlyRecords.length >= 5 ? '成功完成5年经营模拟，' : '在经营模拟过程中，'}通过持续的技术创新和管理优化，有望进一步提升ESG评级。`,
+          `${totalUpgradeInvest > 0 ? '企业已积极开展技术升级投资，' : '建议加强技术升级投资，'}${totalCarbonEmission <= totalAllowance ? '碳配额管理合规，' : '需要加强碳配额管理，'}建议继续完善社会责任体系，提升治理水平，以实现更高质量的可持续发展目标。`,
+          { text: '八、ESG价值体现', style: 'subheader' },
+          `环境价值：通过${totalEnergyUpgradeCount + totalEmissionUpgradeCount}次技改投资，累计投入${totalUpgradeInvest.toLocaleString()}元，有效降低碳排放强度。`,
+          `社会价值：在碳约束下实现${totalProfit >= 0 ? '盈利' : '经营'}，最终现金${finalCash.toLocaleString()}元，展现可持续发展能力。`,
+          `治理价值：完成${yearlyRecords.length}年经营规划，${totalAllowanceTraded > 0 ? '积极开展配额交易' : '建立配额管理机制'}，体现风险管理水平。`,
+          { text: `报告生成时间：${new Date().toLocaleString('zh-CN')}`, style: 'footer', margin: [0, 10, 0, 0] },
+        ],
+        styles: {
+          header: { fontSize: 20, bold: true },
+          subheader: { fontSize: 14, bold: true, margin: [0, 10, 0, 5] },
+          footer: { fontSize: 8, color: '#888888' },
+        },
+        defaultStyle: {
+          font: 'Helvetica' // vfs_fonts 里自带的字体，支持中文
+        }
+      }
+      pdfMake.createPdf(docDefinition).download(`ESG绩效评估报告_${new Date().toISOString().split('T')[0]}.pdf`)
+    } catch (err) {
+      alert('PDF生成失败，请刷新页面重试！\n' + (typeof err === 'object' && err && 'message' in err ? (err as any).message : String(err)));
+    }
+  }
 
   return (
     <div className="space-y-6">
@@ -198,31 +380,53 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete }: ESGRep
             <div className="grid grid-cols-2 gap-4">
               <div className="text-center p-3 bg-green-50 rounded-lg">
                 <div className="text-sm text-gray-500">总碳排放</div>
-                <div className="text-xl font-bold text-green-600">{carbonData.totalEmissions}</div>
-                <div className="text-xs text-gray-500">单位</div>
+                <div className="text-xl font-bold text-green-600">{carbonData.totalEmissions.toLocaleString()}</div>
+                <div className="text-xs text-gray-500">kg</div>
               </div>
               <div className="text-center p-3 bg-blue-50 rounded-lg">
                 <div className="text-sm text-gray-500">碳强度</div>
-                <div className="text-xl font-bold text-blue-600">{carbonData.carbonIntensity}</div>
-                <div className="text-xs text-gray-500">单位/产品</div>
+                <div className="text-xl font-bold text-blue-600">{carbonData.carbonIntensity.toLocaleString()}</div>
+                <div className="text-xs text-gray-500">kg/产品</div>
               </div>
             </div>
             
             <div className="space-y-3">
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>碳减排率</span>
-                  <span>{carbonData.reductionRate}%</span>
+                <div className="flex justify-between text-sm">
+                  <span>碳配额使用率：</span>
+                  <span>{totalAllowance > 0 ? Math.round((totalCarbonEmission / totalAllowance) * 100) : 0}%</span>
                 </div>
-                <Progress value={carbonData.reductionRate} className="h-2" />
+                <Progress value={totalAllowance > 0 ? Math.min(100, (totalCarbonEmission / totalAllowance) * 100) : 0} className="h-2" />
               </div>
-              
               <div>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>能效提升</span>
-                  <span>{Math.round(((10 - companyState.currentEnergyPerUnit) / 10) * 100)}%</span>
+                <div className="flex justify-between text-sm">
+                  <span>技改投资总额：</span>
+                  <span>{totalUpgradeInvest.toLocaleString()} 元</span>
                 </div>
-                <Progress value={((10 - companyState.currentEnergyPerUnit) / 10) * 100} className="h-2" />
+              </div>
+              <div>
+                <div className="flex justify-between text-sm">
+                  <span>节能技改次数：</span>
+                  <span>{totalEnergyUpgradeCount} 次</span>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm">
+                  <span>减排技改次数：</span>
+                  <span>{totalEmissionUpgradeCount} 次</span>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm">
+                  <span>平均产品碳标签：</span>
+                  <span>{avgCarbonLabel.toFixed(2)} kg/个</span>
+                </div>
+              </div>
+              <div>
+                <div className="flex justify-between text-sm">
+                  <span>配额交易收入：</span>
+                  <span>{totalAllowanceTraded.toLocaleString()} 元</span>
+                </div>
               </div>
             </div>
 
@@ -230,16 +434,16 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete }: ESGRep
               <h4 className="font-medium text-gray-800 mb-2">技术升级投资</h4>
               <div className="text-sm space-y-1">
                 <div className="flex justify-between">
-                  <span>能耗技术：</span>
-                  <span>Lv.{companyState.productionUpgrades.energy}</span>
+                  <span>节能技改：</span>
+                  <span>{totalEnergyUpgradeCount} 次</span>
                 </div>
                 <div className="flex justify-between">
-                  <span>碳排技术：</span>
-                  <span>Lv.{companyState.productionUpgrades.emission}</span>
+                  <span>减排技改：</span>
+                  <span>{totalEmissionUpgradeCount} 次</span>
                 </div>
                 <div className="flex justify-between border-t pt-1">
                   <span>总投资：</span>
-                  <span>{(companyState.productionUpgrades.energy + companyState.productionUpgrades.emission) * 10}M</span>
+                  <span>{totalUpgradeInvest.toLocaleString()} 元</span>
                 </div>
               </div>
             </div>
@@ -260,18 +464,24 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete }: ESGRep
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>经营年限：</span>
-                  <span>{Math.min(companyState.currentYear, 5)}/5年</span>
+                  <span>{Math.min(yearlyRecords.length, 5)}/5年</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>财务状况：</span>
-                  <span className={companyState.funds >= 0 ? 'text-green-600' : 'text-red-600'}>
-                    {companyState.funds >= 0 ? '健康' : '困难'}
+                  <span className={finalCash >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {finalCash >= 0 ? '健康' : '困难'}
                   </span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>游戏状态：</span>
-                  <span className={!companyState.gameOver ? 'text-green-600' : 'text-red-600'}>
-                    {!companyState.gameOver ? '正常运营' : '提前结束'}
+                  <span>最终现金：</span>
+                  <span className={finalCash >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {finalCash.toLocaleString()} 元
+                  </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>累计利润：</span>
+                  <span className={totalProfit >= 0 ? 'text-green-600' : 'text-red-600'}>
+                    {totalProfit.toLocaleString()} 元
                   </span>
                 </div>
               </div>
@@ -282,17 +492,43 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete }: ESGRep
               <div className="space-y-2">
                 <div className="flex justify-between text-sm">
                   <span>规划执行：</span>
-                  <span>{companyState.quarterlyRecords.length}个季度</span>
+                  <span>{yearlyRecords.length}个年度</span>
                 </div>
                 <div className="flex justify-between text-sm">
                   <span>升级决策：</span>
-                  <span>{companyState.upgradeHistory.length}次</span>
+                  <span>{upgradeHistory.length}次</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>风险管理：</span>
-                  <span className={!companyState.gameOver ? 'text-green-600' : 'text-orange-600'}>
-                    {!companyState.gameOver ? '良好' : '需改进'}
+                  <span>技改投资：</span>
+                  <span>{totalUpgradeInvest.toLocaleString()} 元</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>配额交易：</span>
+                  <span>{totalAllowanceTraded > 0 ? '已开展' : '未开展'}</span>
+                </div>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="font-medium text-gray-800 mb-3">可持续发展</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span>碳合规性：</span>
+                  <span className={totalCarbonEmission <= totalAllowance ? 'text-green-600' : 'text-red-600'}>
+                    {totalCarbonEmission <= totalAllowance ? '合规' : '超排'}
                   </span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>技术升级：</span>
+                  <span>{totalUpgradeInvest > 0 ? '已投资' : '未投资'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>绿色供应链：</span>
+                  <span>{totalUpgradeInvest > 0 ? '已建立' : '待建立'}</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span>长期规划：</span>
+                  <span>{yearlyRecords.length >= 5 ? '已完成' : '进行中'}</span>
                 </div>
               </div>
             </div>
@@ -300,19 +536,22 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete }: ESGRep
             <div>
               <h4 className="font-medium text-gray-800 mb-3">碳配额管理</h4>
               <div className="space-y-2">
-                {companyState.carbonAllowances.slice(0, companyState.currentYear).map((allowance, index) => (
-                  <div key={index} className="flex justify-between text-sm">
-                    <span>第{allowance.year}年：</span>
-                    <span className={allowance.used <= allowance.allowance ? 'text-green-600' : 'text-red-600'}>
-                      {allowance.used}/{allowance.allowance}
-                      {allowance.traded !== 0 && (
-                        <span className="ml-1">
-                          ({allowance.traded > 0 ? '+' : ''}{allowance.traded})
+                {Array.isArray(companyState.carbonAllowances) && typeof companyState.currentYear === 'number' && companyState.currentYear > 0
+                  ? companyState.carbonAllowances.slice(0, companyState.currentYear).map((allowance, index) => (
+                      <div key={index} className="flex justify-between text-sm">
+                        <span>第{allowance.year}年：</span>
+                        <span className={allowance.used <= allowance.allowance ? 'text-green-600' : 'text-red-600'}>
+                          {allowance.used}/{allowance.allowance}
+                          {allowance.traded !== 0 && (
+                            <span className="ml-1">
+                              ({allowance.traded > 0 ? '+' : ''}{allowance.traded})
+                            </span>
+                          )}
                         </span>
-                      )}
-                    </span>
-                  </div>
-                ))}
+                      </div>
+                    ))
+                  : <div className='text-gray-400'>暂无碳配额数据</div>
+                }
               </div>
             </div>
           </CardContent>
@@ -362,22 +601,34 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete }: ESGRep
                     <span>环境绩效表现优秀，碳减排效果显著</span>
                   </li>
                 )}
-                {companyState.upgradeHistory.length > 0 && (
+                {upgradeHistory.length > 0 && (
                   <li className="flex items-start gap-2">
                     <span className="text-green-600 mt-1">✓</span>
                     <span>积极投资清洁技术，提升生产效率</span>
                   </li>
                 )}
-                {!companyState.gameOver && (
+                {yearlyRecords.length >= 5 && (
                   <li className="flex items-start gap-2">
                     <span className="text-green-600 mt-1">✓</span>
                     <span>成功完成5年经营目标，展现可持续发展能力</span>
                   </li>
                 )}
-                {companyState.funds > 0 && (
+                {finalCash > 0 && (
                   <li className="flex items-start gap-2">
                     <span className="text-green-600 mt-1">✓</span>
                     <span>保持良好的财务状况和经营稳定性</span>
+                  </li>
+                )}
+                {totalCarbonEmission <= totalAllowance && (
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 mt-1">✓</span>
+                    <span>碳配额管理合规，未出现超排情况</span>
+                  </li>
+                )}
+                {totalUpgradeInvest > 0 && (
+                  <li className="flex items-start gap-2">
+                    <span className="text-green-600 mt-1">✓</span>
+                    <span>重视技术升级投资，体现长期发展思维</span>
                   </li>
                 )}
               </ul>
@@ -388,11 +639,17 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete }: ESGRep
               <div className="text-sm text-gray-600 space-y-2">
                 <p>
                   基于当前ESG绩效表现，企业在可持续发展方面展现了{overallRating.rating}级水平。
-                  通过持续的技术创新和管理优化，有望进一步提升ESG评级。
+                  {yearlyRecords.length >= 5 ? '成功完成5年经营模拟，' : '在经营模拟过程中，'}通过持续的技术创新和管理优化，有望进一步提升ESG评级。
                 </p>
                 <p>
-                  建议继续加强环境保护投入，完善社会责任体系，提升治理水平，
-                  以实现更高质量的可持续发展目标。
+                  {totalUpgradeInvest > 0 ? '企业已积极开展技术升级投资，' : '建议加强技术升级投资，'}
+                  {totalCarbonEmission <= totalAllowance ? '碳配额管理合规，' : '需要加强碳配额管理，'}
+                  建议继续完善社会责任体系，提升治理水平，以实现更高质量的可持续发展目标。
+                </p>
+                <p>
+                  累计技改投资：{totalUpgradeInvest.toLocaleString()} 元 | 
+                  碳配额使用率：{totalAllowance > 0 ? Math.round((totalCarbonEmission / totalAllowance) * 100) : 0}% | 
+                  最终现金：{finalCash.toLocaleString()} 元
                 </p>
               </div>
             </div>
@@ -404,6 +661,11 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete }: ESGRep
               本次模拟展示了ESG理念在企业经营中的重要作用。通过平衡环境保护、社会责任和公司治理，
               企业不仅能够应对碳约束挑战，还能够实现长期可持续发展，为所有利益相关者创造价值。
             </p>
+            <div className="mt-3 text-sm text-gray-600 space-y-1">
+              <p><strong>环境价值：</strong>通过{totalEnergyUpgradeCount + totalEmissionUpgradeCount}次技改投资，累计投入{totalUpgradeInvest.toLocaleString()}元，有效降低碳排放强度。</p>
+              <p><strong>社会价值：</strong>在碳约束下实现{totalProfit >= 0 ? '盈利' : '经营'}，最终现金{finalCash.toLocaleString()}元，展现可持续发展能力。</p>
+              <p><strong>治理价值：</strong>完成{yearlyRecords.length}年经营规划，{totalAllowanceTraded > 0 ? '积极开展配额交易' : '建立配额管理机制'}，体现风险管理水平。</p>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -416,17 +678,33 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete }: ESGRep
         </Button>
         
         <div className="flex gap-2">
-          <Button variant="outline" className="bg-blue-50 hover:bg-blue-100">
+          <Button variant="outline" className="bg-blue-50 hover:bg-blue-100" onClick={() => downloadESGReport()}>
             <Download className="mr-2 h-4 w-4" />
             下载报告
           </Button>
           
-          <Button onClick={onComplete} className="bg-purple-600 hover:bg-purple-700">
+          <Button onClick={() => setShowFinishDialog(true)} className="bg-purple-600 hover:bg-purple-700">
             <CheckCircle className="mr-2 h-4 w-4" />
             完成实验
           </Button>
         </div>
       </div>
+
+      {/* 完成实验弹窗 */}
+      <Dialog open={showFinishDialog} onOpenChange={setShowFinishDialog}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>🎉 恭喜完成实验！</DialogTitle>
+          </DialogHeader>
+          <div className="text-center text-lg font-medium my-4">您已顺利完成企业碳管理经营模拟实验。</div>
+          <DialogFooter className="flex flex-col gap-2">
+            <Button onClick={() => { setShowFinishDialog(false); downloadESGReport(); }} className="w-full bg-blue-600 hover:bg-blue-700">
+              <Download className="mr-2 h-4 w-4" />下载ESG报告
+            </Button>
+            <Button onClick={() => { window.location.href = "/" }} variant="outline" className="w-full">返回主页</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 } 
