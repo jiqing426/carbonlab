@@ -74,6 +74,10 @@ export default function CarbonTradingSimulationPage() {
     annualPlans: []
   })
 
+  // 年度历史记录和升级历史记录提升到主页面
+  const [yearlyRecords, setYearlyRecords] = useState<any[]>([])
+  const [upgradeHistory, setUpgradeHistory] = useState<any[]>([])
+
   // 处理步骤变更
   const handleStepChange = (stepIndex: number) => {
     // 如果是最后一步的"完成实验"按钮
@@ -132,6 +136,10 @@ export default function CarbonTradingSimulationPage() {
             onDataUpdate={updateSimulationData}
             onNext={() => setCurrentStepIndex(3)}
             onPrevious={() => setCurrentStepIndex(1)}
+            yearlyRecords={yearlyRecords}
+            setYearlyRecords={setYearlyRecords}
+            upgradeHistory={upgradeHistory}
+            setUpgradeHistory={setUpgradeHistory}
           />
         )}
 
@@ -141,6 +149,8 @@ export default function CarbonTradingSimulationPage() {
             simulationData={simulationData}
             onPrevious={() => setCurrentStepIndex(2)}
             onComplete={() => setCurrentStepIndex(4)}
+            yearlyRecords={yearlyRecords}
+            upgradeHistory={upgradeHistory}
           />
         )}
 
@@ -150,6 +160,8 @@ export default function CarbonTradingSimulationPage() {
             simulationData={simulationData}
             onPrevious={() => setCurrentStepIndex(3)}
             onComplete={() => console.log("实验完成")}
+            yearlyRecords={yearlyRecords}
+            upgradeHistory={upgradeHistory}
           />
         )}
       </div>
