@@ -150,11 +150,11 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete, yearlyRe
         })
       }
       if (totalUpgradeInvest === 0) {
-        recommendations.push({
-          category: "环境",
-          priority: "高",
+      recommendations.push({
+        category: "环境",
+        priority: "高",
           suggestion: "加大清洁技术投资，降低碳排放强度"
-        })
+      })
       }
     }
     
@@ -167,11 +167,11 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete, yearlyRe
         })
       }
       if (totalProfit < 0) {
-        recommendations.push({
-          category: "社会",
-          priority: "中",
+      recommendations.push({
+        category: "社会",
+        priority: "中",
           suggestion: "优化经营策略，提高盈利能力"
-        })
+      })
       }
     }
     
@@ -184,14 +184,14 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete, yearlyRe
         })
       }
       if (totalUpgradeInvest === 0) {
-        recommendations.push({
-          category: "治理",
-          priority: "中",
+      recommendations.push({
+        category: "治理",
+        priority: "中",
           suggestion: "制定长期发展规划，提升决策执行效率"
-        })
+      })
       }
     }
-
+    
     if (recommendations.length === 0) {
       recommendations.push({
         category: "综合",
@@ -538,17 +538,17 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete, yearlyRe
               <div className="space-y-2">
                 {Array.isArray(companyState.carbonAllowances) && typeof companyState.currentYear === 'number' && companyState.currentYear > 0
                   ? companyState.carbonAllowances.slice(0, companyState.currentYear).map((allowance, index) => (
-                      <div key={index} className="flex justify-between text-sm">
-                        <span>第{allowance.year}年：</span>
-                        <span className={allowance.used <= allowance.allowance ? 'text-green-600' : 'text-red-600'}>
-                          {allowance.used}/{allowance.allowance}
-                          {allowance.traded !== 0 && (
-                            <span className="ml-1">
-                              ({allowance.traded > 0 ? '+' : ''}{allowance.traded})
-                            </span>
-                          )}
+                  <div key={index} className="flex justify-between text-sm">
+                    <span>第{allowance.year}年：</span>
+                    <span className={allowance.used <= allowance.allowance ? 'text-green-600' : 'text-red-600'}>
+                      {allowance.used}/{allowance.allowance}
+                      {allowance.traded !== 0 && (
+                        <span className="ml-1">
+                          ({allowance.traded > 0 ? '+' : ''}{allowance.traded})
                         </span>
-                      </div>
+                      )}
+                    </span>
+                  </div>
                     ))
                   : <div className='text-gray-400'>暂无碳配额数据</div>
                 }

@@ -1,13 +1,14 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { BarChart3, Download } from "lucide-react"
+import { BarChart3, Download, ArrowLeft, CheckCircle } from "lucide-react"
 import { CalculationResults, ExperimentStep } from "./types"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, CartesianGrid, XAxis, YAxis, Bar, LineChart, Line } from "recharts"
-import { useRef } from "react"
+import { useRef, useState } from "react"
 import jsPDF from "jspdf"
 import html2canvas from "html2canvas"
 import { toast } from "sonner"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 
 interface ReportStepProps {
   projectName: string
@@ -27,6 +28,7 @@ export function ReportStep({
   onDownloadReport
 }: ReportStepProps) {
   const reportRef = useRef<HTMLDivElement>(null)
+  const [isCompleteDialogOpen, setIsCompleteDialogOpen] = useState(false)
 
   const handleDownloadPDF = async () => {
     if (!reportRef.current) return
@@ -76,6 +78,10 @@ export function ReportStep({
       console.error("生成 PDF 失败:", error)
       toast.error("生成报告失败，请重试")
     }
+  }
+
+  const handlePrevious = () => {
+    onPrevious("calculation")
   }
 
   // 准备饼图数据
@@ -389,12 +395,47 @@ export function ReportStep({
         </div>
 
         {/* 操作按钮 */}
-        <div className="flex justify-center">
-          <Button variant="outline" onClick={handleDownloadPDF}>
-            <Download className="w-4 h-4 mr-2" />
-            下载报告
+        <div className="flex justify-center space-x-4">
+          <Button variant="outline" onClick={handlePrevious}>
+            <ArrowLeft className="w-4 h-4 mr-2" />
+            返回上一步
+          </Button>
+          <Button onClick={() => setIsCompleteDialogOpen(true)} className="bg-purple-600 hover:bg-purple-700">
+            <CheckCircle className="w-4 h-4 mr-2" />
+            完成实验
           </Button>
         </div>
+
+        <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>🎉 恭喜完成实验！</DialogTitle>
+            </DialogHeader>
+            <div className="text-center text-lg font-medium my-4">您已顺利完成交通基础设施碳核算实验。</div>
+            <DialogFooter className="flex flex-col gap-2">
+              <Button 
+                onClick={() => { 
+                  setIsCompleteDialogOpen(false)
+                  handleDownloadPDF()
+                }} 
+                className="w-full bg-blue-600 hover:bg-blue-700"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                下载实验报告
+              </Button>
+              <Button 
+                onClick={() => { 
+                  setIsCompleteDialogOpen(false)
+                  window.location.href = "/"
+                }} 
+                variant="outline" 
+                className="w-full"
+              >
+                返回首页
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   )

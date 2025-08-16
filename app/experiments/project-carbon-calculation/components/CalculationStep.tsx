@@ -1,13 +1,203 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
+import { Separator } from "@/components/ui/separator"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Calculator, Info, Truck, Hammer, Zap, Package, ChevronDown, ChevronRight, Plus, Trash2, Trees } from "lucide-react"
-import { CarbonCalculationData, CalculationResults, ExperimentStep, CarbonEmissionItem, presetEmissionFactors, EmissionScope, PresetEmissionFactor } from "./types"
+import { ChevronDown, Plus, Trash2, Calculator, Truck, Zap, Wrench, Leaf, HardHat, Users, ChevronRight, Info, Hammer, Package, Trees } from "lucide-react"
+import { ExperimentStep, CarbonCalculationData, CarbonEmissionItem, CalculationResults, presetEmissionFactors, PresetEmissionFactor, EmissionScope } from "./types"
 import { useState } from "react"
+
+// 材料数据库 - 材料名称与碳排放因子的对应关系
+const materialDatabase = {
+  "C10混凝土": { factor: 210, unit: "kg CO2/m3", scope: "范围一" },
+  "C15混凝土": { factor: 235, unit: "kg CO2/m3", scope: "范围一" },
+  "C20混凝土": { factor: 241, unit: "kg CO2/m3", scope: "范围一" },
+  "C20透水混凝土": { factor: 224.8, unit: "kg CO2/m3", scope: "范围一" },
+  "C25混凝土": { factor: 255, unit: "kg CO2/m3", scope: "范围一" },
+  "C30混凝土": { factor: 295, unit: "kg CO2/m3", scope: "范围一" },
+  "普通硅酸盐水泥(市场平均)": { factor: 735, unit: "kg CO2/t", scope: "范围一" },
+  "1:2抹灰用水泥砂浆": { factor: 531.52, unit: "kg CO2/m3", scope: "范围一" },
+  "页岩实心砖": { factor: 292, unit: "kg CO2/m3", scope: "范围一" },
+  "乳化沥青": { factor: 221, unit: "kg CO2/t", scope: "范围一" },
+  "改性沥青": { factor: 295.91, unit: "kg CO2/t", scope: "范围一" },
+  "沥青混合料": { factor: 2.199, unit: "kg CO2/m3", scope: "范围一" },
+  "透水沥青混凝土": { factor: 2.199, unit: "kg CO2/m3", scope: "范围一" },
+  "PE透水管": { factor: 3.6, unit: "kg CO2/kg", scope: "范围一" },
+  "高密度聚乙烯": { factor: 2620, unit: "kg CO2/t", scope: "范围一" },
+  "硬聚氯乙烯管": { factor: 7.93, unit: "kg CO2/kg", scope: "范围一" },
+  "聚乙烯管": { factor: 3.6, unit: "kg CO2/kg", scope: "范围一" },
+  "防渗土工布": { factor: 2.098, unit: "kg CO2/kg", scope: "范围一" },
+  "陶瓷透水砖": { factor: 2.21, unit: "kg CO2/m3", scope: "范围一" },
+  "普通碳钢(市场平均)": { factor: 2.05, unit: "kg CO2/kg", scope: "范围一" },
+  "热轧碳钢钢筋": { factor: 2.34, unit: "kg CO2/kg", scope: "范围一" },
+  "热轧碳钢无缝钢管": { factor: 3150, unit: "kg CO2/t", scope: "范围一" }
+}
+
+// 材料名称列表，用于下拉菜单
+const materialNames = Object.keys(materialDatabase)
+
+// 根据材料名称获取对应的碳排放因子信息
+const getMaterialInfo = (materialName: string) => {
+  return materialDatabase[materialName as keyof typeof materialDatabase]
+}
+
+// 运输碳排放因子数据库 - 所有材料都使用相同的运输碳排放因子
+const transportEmissionFactor = 0.078 // kgCO₂/t·km
+const transportVehicleType = "重型柴油货车运输(载重30t)"
+
+// 施工机械数据库 - 机械名称与碳排放系数的对应关系
+const constructionMachineryDatabase = {
+  "斗容量 1.0m³ 履带式单斗挖掘机": { 
+    factor: 249.085, 
+    scope: "范围一",
+    type: "diesel"
+  },
+  "斗容量 0.6m³ 履带式单斗挖掘机": { 
+    factor: 116.095, 
+    scope: "范围一",
+    type: "diesel"
+  },
+  "斗容量 1.0m³ 轮胎式装载机": { 
+    factor: 151.993, 
+    scope: "范围一",
+    type: "diesel"
+  },
+  "最大摊铺宽度 12.5m 沥青混合料摊铺机(带自动找平)": { 
+    factor: 422.313, 
+    scope: "范围一",
+    type: "diesel"
+  },
+  "25以内振动压路机": { 
+    factor: 367.04, 
+    scope: "范围一",
+    type: "diesel"
+  },
+  "25~30t轮胎式压路机": { 
+    factor: 243.04, 
+    scope: "范围一",
+    type: "diesel"
+  },
+  "功率15KW以内柴油发电机组": { 
+    factor: 49.6, 
+    scope: "范围一",
+    type: "diesel"
+  },
+  "提升质量25t以内汽车式起重机(QY25)": { 
+    factor: 126.015, 
+    scope: "范围一",
+    type: "diesel"
+  },
+  "最大作业高度10m以内高空作业车": { 
+    factor: 64.945, 
+    scope: "范围一",
+    type: "diesel"
+  },
+  "蛙式夯土机(200~620N·m)": { 
+    factor: 10.07454, 
+    scope: "范围二",
+    type: "electricity"
+  },
+  "插入式混凝土振捣器": { 
+    factor: 3.24779, 
+    scope: "范围二",
+    type: "electricity"
+  },
+  "锯片直径400mm以内型材切割机": { 
+    factor: 7.07658, 
+    scope: "范围二",
+    type: "electricity"
+  },
+  "直径(mm)40以内钢筋弯曲机": { 
+    factor: 8.134, 
+    scope: "范围二",
+    type: "electricity"
+  }
+}
+
+// 机械名称列表，用于下拉菜单
+const machineryNames = Object.keys(constructionMachineryDatabase)
+
+// 根据机械名称获取对应的碳排放系数信息
+const getMachineryInfo = (machineryName: string) => {
+  return constructionMachineryDatabase[machineryName as keyof typeof constructionMachineryDatabase]
+}
+
+// 劳动者类型数据库 - 劳动者类型与生活碳排放因子的对应关系
+const laborerTypeDatabase = {
+  "管理人员": { 
+    factor: 2.09, 
+    scope: "范围三",
+    unit: "kg/人·天"
+  },
+  "机械操作手": { 
+    factor: 2.42, 
+    scope: "范围三",
+    unit: "kg/人·天"
+  },
+  "工人": { 
+    factor: 2.83, 
+    scope: "范围三",
+    unit: "kg/人·天"
+  }
+}
+
+// 劳动者类型列表，用于下拉菜单
+const laborerTypeNames = Object.keys(laborerTypeDatabase)
+
+// 根据劳动者类型获取对应的生活碳排放因子信息
+const getLaborerTypeInfo = (laborerTypeName: string) => {
+  return laborerTypeDatabase[laborerTypeName as keyof typeof laborerTypeDatabase]
+}
+
+// 临时用能类型数据库 - 类型与电网排放因子的对应关系
+const temporaryEnergyDatabase = {
+  "生活用能": { 
+    factor: 0.5810, 
+    scope: "范围二",
+    unit: "t/(MW·h)"
+  }
+}
+
+// 临时用能类型列表，用于下拉菜单
+const temporaryEnergyTypeNames = Object.keys(temporaryEnergyDatabase)
+
+// 根据临时用能类型获取对应的电网排放因子信息
+const getTemporaryEnergyInfo = (energyTypeName: string) => {
+  return temporaryEnergyDatabase[energyTypeName as keyof typeof temporaryEnergyDatabase]
+}
+
+// 废弃物类型数据库 - 废弃物类型与运输碳排放因子的对应关系
+const wasteTypeDatabase = {
+  "弃土": { 
+    factor: 0.078, 
+    scope: "范围一",
+    transportType: "重型柴油货车运输(载重30t)",
+    unit: "kgCO₂/t·km"
+  },
+  "破除块": { 
+    factor: 0.078, 
+    scope: "范围一",
+    transportType: "重型柴油货车运输(载重30t)",
+    unit: "kgCO₂/t·km"
+  },
+  "淤泥、流砂": { 
+    factor: 0.078, 
+    scope: "范围一",
+    transportType: "重型柴油货车运输(载重30t)",
+    unit: "kgCO₂/t·km"
+  }
+}
+
+// 废弃物类型列表，用于下拉菜单
+const wasteTypeNames = Object.keys(wasteTypeDatabase)
+
+// 根据废弃物类型获取对应的运输碳排放因子信息
+const getWasteTypeInfo = (wasteTypeName: string) => {
+  return wasteTypeDatabase[wasteTypeName as keyof typeof wasteTypeDatabase]
+}
 
 interface CalculationStepProps {
   carbonData: CarbonCalculationData
@@ -106,40 +296,43 @@ export function CalculationStep({
   }
 
   // 更新条目
-  const updateItem = (category: keyof CarbonCalculationData, itemId: string, field: keyof CarbonEmissionItem, value: string | number) => {
+  const updateItem = (category: keyof CarbonCalculationData, itemId: string, field: keyof CarbonEmissionItem, value: any) => {
     const newData = {
       ...carbonData,
       [category]: carbonData[category].map(item => {
         if (item.id === itemId) {
           const updatedItem = { ...item, [field]: value }
-          // 自动计算排放量
-          switch (category) {
-            case "transport":
-              const weight = updatedItem.transportWeight || 0
-              const distance = updatedItem.transportDistance || 0
-              const factor = updatedItem.factor || 0
-              updatedItem.emission = Number((weight * distance * factor).toFixed(2))
-              break
-            case "energy":
-              const shifts = updatedItem.shifts || 0
-              const energyFactor = updatedItem.factor || 0
-              updatedItem.emission = Number((shifts * energyFactor).toFixed(2))
-              break
-            case "labor":
-              const workdays = updatedItem.workdays || 0
-              const laborFactor = updatedItem.factor || 0
-              updatedItem.emission = Number((workdays * laborFactor).toFixed(2))
-              break
-            case "temporary":
-              const consumption = updatedItem.consumption || 0
-              const tempFactor = updatedItem.factor || 0
-              updatedItem.emission = Number((consumption * tempFactor).toFixed(2))
-              break
-            default:
-          if (field === "consumption" || field === "factor") {
-            updatedItem.emission = Number((updatedItem.consumption * updatedItem.factor).toFixed(2))
-              }
+          
+          // 如果是材料类别，且选择了材料名称，则自动填充相关信息
+          if (category === "materials" && field === "category" && value) {
+            const materialInfo = getMaterialInfo(value)
+            if (materialInfo) {
+              updatedItem.factor = materialInfo.factor
+              updatedItem.unit = materialInfo.unit
+              updatedItem.scope = materialInfo.scope as EmissionScope
+            }
           }
+          
+          // 如果是施工机械类别，且台班量变化，则自动计算碳排放量
+          if (category === "energy" && field === "shifts") {
+            updatedItem.emission = Number((updatedItem.factor * value).toFixed(2))
+          }
+          
+          // 如果是人员活动类别，且累计有效工作日变化，则自动计算碳排放量
+          if (category === "labor" && field === "workdays") {
+            updatedItem.emission = Number((updatedItem.factor * value).toFixed(2))
+          }
+          
+          // 如果是临时用能类别，且用电量变化，则自动计算碳排放量
+          if (category === "temporary" && field === "consumption") {
+            updatedItem.emission = Number((updatedItem.factor * value).toFixed(2))
+          }
+          
+          // 自动计算排放量
+          if (field === "consumption" || field === "factor") {
+            updatedItem.emission = updatedItem.consumption * updatedItem.factor
+          }
+          
           return updatedItem
         }
         return item
@@ -372,13 +565,11 @@ export function CalculationStep({
                                 <SelectValue placeholder="选择材料" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="C25混凝土">C25混凝土</SelectItem>
-                                <SelectItem value="C30混凝土">C30混凝土</SelectItem>
-                                <SelectItem value="钢筋">钢筋</SelectItem>
-                                <SelectItem value="沥青">沥青</SelectItem>
-                                <SelectItem value="碎石">碎石</SelectItem>
-                                <SelectItem value="水泥">水泥</SelectItem>
-                                <SelectItem value="砂石">砂石</SelectItem>
+                                {materialNames.map((name) => (
+                                  <SelectItem key={name} value={name}>
+                                    {name}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </td>
@@ -390,69 +581,34 @@ export function CalculationStep({
                             />
                           </td>
                           <td className="p-2 border">
-                            <Select
+                            <Input
                               value={item.unit}
-                              onValueChange={(value) => updateItem("materials", item.id, "unit", value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择单位" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="m3">m3</SelectItem>
-                                <SelectItem value="kg">kg</SelectItem>
-                                <SelectItem value="t">t</SelectItem>
-                              </SelectContent>
-                            </Select>
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border">
-                            <Select
-                              value={item.factor.toString()}
-                              onValueChange={(value) => updateItem("materials", item.id, "factor", parseFloat(value))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择因子" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="255">255</SelectItem>
-                                <SelectItem value="350">350</SelectItem>
-                                <SelectItem value="2100">2100</SelectItem>
-                                <SelectItem value="450">450</SelectItem>
-                                <SelectItem value="8">8</SelectItem>
-                                <SelectItem value="820">820</SelectItem>
-                                <SelectItem value="5">5</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <Input
+                              type="number"
+                              value={item.factor}
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border">
-                            <Select
-                              value={item.unit}
-                              onValueChange={(value) => updateItem("materials", item.id, "unit", value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择单位" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="kg CO2/m3">kg CO2/m3</SelectItem>
-                                <SelectItem value="kg CO2/kg">kg CO2/kg</SelectItem>
-                                <SelectItem value="kg CO2/t">kg CO2/t</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <Input
+                              value={getMaterialInfo(item.category)?.unit || ""}
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border text-center">{item.emission}</td>
                           <td className="p-2 border">
-                            <Select
+                            <Input
                               value={item.scope}
-                              onValueChange={(value) => updateItem("materials", item.id, "scope", value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择范围" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="范围一">范围一</SelectItem>
-                                <SelectItem value="范围二">范围二</SelectItem>
-                                <SelectItem value="范围三">范围三</SelectItem>
-                              </SelectContent>
-                            </Select>
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border text-center">
                             <Button
@@ -476,6 +632,19 @@ export function CalculationStep({
                   添加条目
                 </Button>
               </div>
+              
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>材料名称与碳排放因子联动说明：</strong>
+                  <br />
+                  选择材料名称后，系统会自动填充对应的碳排放因子、单位和排放范围，确保数据的准确性和一致性。
+                  <br />
+                  碳排放量将根据材料消耗量和碳排放因子自动计算。
+                  <br />
+                  <strong>排放范围说明：</strong>范围一（直接排放）、范围二（间接排放-电力）、范围三（其他间接排放）。
+                </AlertDescription>
+              </Alert>
             </div>
           </CollapsibleContent>
         </Collapsible>
@@ -526,34 +695,32 @@ export function CalculationStep({
                             <Select
                               value={item.category}
                               onValueChange={(value) => {
-                                const preset = presetEmissionFactors.transport.find(p => p.category === value)
-                                if (preset) {
-                                  const newData = {
-                                    ...carbonData,
-                                    transport: carbonData.transport.map(t => {
-                                      if (t.id === item.id) {
-                                        return {
-                                          ...t,
-                                          category: preset.category,
-                                          transportType: preset.transportType || "",
-                                          factor: preset.factor,
-                                          scope: preset.scope
-                                        }
+                                // 当选择材料名称时，自动填充运输相关信息
+                                const newData = {
+                                  ...carbonData,
+                                  transport: carbonData.transport.map(t => {
+                                    if (t.id === item.id) {
+                                      return {
+                                        ...t,
+                                        category: value,
+                                        factor: transportEmissionFactor,
+                                        transportType: transportVehicleType,
+                                        scope: "范围一" as EmissionScope
                                       }
-                                      return t
-                                    })
-                                  }
-                                  onDataUpdate(newData)
+                                    }
+                                    return t
+                                  })
                                 }
+                                onDataUpdate(newData)
                               }}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="选择材料" />
                               </SelectTrigger>
                               <SelectContent>
-                                {presetEmissionFactors.transport.map((preset) => (
-                                  <SelectItem key={preset.category} value={preset.category}>
-                                    {preset.category}
+                                {materialNames.map((name) => (
+                                  <SelectItem key={name} value={name}>
+                                    {name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -610,53 +777,27 @@ export function CalculationStep({
                             />
                           </td>
                           <td className="p-2 border">
-                            <Select
+                            <Input
                               value={item.transportType || ""}
-                              onValueChange={(value) => updateItem("transport", item.id, "transportType", value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择运输类型" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="重型柴油货车运输(载重30t)">重型柴油货车运输(载重30t)</SelectItem>
-                              </SelectContent>
-                            </Select>
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border">
-                            <Select
-                              value={item.factor.toString()}
-                              onValueChange={(value) => {
-                                const factor = parseFloat(value)
-                                updateItem("transport", item.id, "factor", factor)
-                                // 自动计算排放量
-                                const weight = item.transportWeight || 0
-                                const distance = item.transportDistance || 0
-                                updateItem("transport", item.id, "emission", Number((weight * distance * factor).toFixed(2)))
-                              }}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择因子" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="0.078">0.078</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <Input
+                              type="number"
+                              value={item.factor}
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border text-center">{item.emission}</td>
                           <td className="p-2 border">
-                            <Select
+                            <Input
                               value={item.scope}
-                              onValueChange={(value) => updateItem("transport", item.id, "scope", value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择范围" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="范围一">范围一</SelectItem>
-                                <SelectItem value="范围二">范围二</SelectItem>
-                                <SelectItem value="范围三">范围三</SelectItem>
-                              </SelectContent>
-                            </Select>
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border text-center">
                             <Button
@@ -680,6 +821,19 @@ export function CalculationStep({
                   添加条目
                 </Button>
               </div>
+              
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>材料运输碳排放因子联动说明：</strong>
+                  <br />
+                  选择材料名称后，系统会自动填充运输碳排放因子（0.078 kgCO₂/t·km）、运输汽车类型（重型柴油货车运输(载重30t)）和排放范围（范围一）。
+                  <br />
+                  所有材料的运输碳排放因子均为0.078 kgCO₂/t·km，这是基于重型柴油货车运输的标准值。
+                  <br />
+                  碳排放量将根据材料重量、运输距离和运输碳排放因子自动计算。
+                </AlertDescription>
+              </Alert>
             </div>
           </CollapsibleContent>
         </Collapsible>
@@ -729,13 +883,37 @@ export function CalculationStep({
                           <td className="p-2 border">
                             <Select
                               value={item.category}
-                              onValueChange={(value) => updateItem("energy", item.id, "category", value)}
+                              onValueChange={(value) => {
+                                // 当选择机械名称时，自动填充相关信息
+                                const machineryInfo = getMachineryInfo(value)
+                                if (machineryInfo) {
+                                  const newData = {
+                                    ...carbonData,
+                                    energy: carbonData.energy.map(e => {
+                                      if (e.id === item.id) {
+                                        return {
+                                          ...e,
+                                          category: value,
+                                          factor: machineryInfo.factor,
+                                          scope: machineryInfo.scope as EmissionScope
+                                        }
+                                      }
+                                      return e
+                                    })
+                                  }
+                                  onDataUpdate(newData)
+                                }
+                              }}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="选择机械" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="斗容量 1.0m3 履带式单斗挖掘机">斗容量 1.0m3 履带式单斗挖掘机</SelectItem>
+                                {machineryNames.map((name) => (
+                                  <SelectItem key={name} value={name}>
+                                    {name}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </td>
@@ -754,17 +932,12 @@ export function CalculationStep({
                             />
                           </td>
                           <td className="p-2 border">
-                            <Select
-                              value={item.factor.toString()}
-                              onValueChange={(value) => updateItem("energy", item.id, "factor", parseFloat(value))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择因子" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="249.085">249.085</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <Input
+                              type="number"
+                              value={item.factor}
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border">
                             <Input
@@ -775,19 +948,11 @@ export function CalculationStep({
                           </td>
                           <td className="p-2 border text-center">{item.emission}</td>
                           <td className="p-2 border">
-                            <Select
+                            <Input
                               value={item.scope}
-                              onValueChange={(value) => updateItem("energy", item.id, "scope", value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择范围" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="范围一">范围一</SelectItem>
-                                <SelectItem value="范围二">范围二</SelectItem>
-                                <SelectItem value="范围三">范围三</SelectItem>
-                              </SelectContent>
-                            </Select>
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border text-center">
                             <Button
@@ -811,6 +976,19 @@ export function CalculationStep({
                   添加条目
                 </Button>
               </div>
+              
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>施工机械碳排放系数联动说明：</strong>
+                  <br />
+                  选择机械名称后，系统会自动填充对应的碳排放系数（kg CO2/台班）和排放范围。
+                  <br />
+                  柴油机械的排放范围为"范围一"（直接排放），电动机械的排放范围为"范围二"（间接排放-电力）。
+                  <br />
+                  碳排放量将根据碳排放系数和台班量自动计算。
+                </AlertDescription>
+              </Alert>
             </div>
 
             {/* 人员活动碳排放计算 */}
@@ -843,15 +1021,36 @@ export function CalculationStep({
                           <td className="p-2 border">
                             <Select
                               value={item.category}
-                              onValueChange={(value) => updateItem("labor", item.id, "category", value)}
+                              onValueChange={(value) => {
+                                const laborerInfo = getLaborerTypeInfo(value)
+                                if (laborerInfo) {
+                                  const newData = {
+                                    ...carbonData,
+                                    labor: carbonData.labor.map(l => {
+                                      if (l.id === item.id) {
+                                        return {
+                                          ...l,
+                                          category: value,
+                                          factor: laborerInfo.factor,
+                                          scope: laborerInfo.scope as EmissionScope
+                                        }
+                                      }
+                                      return l
+                                    })
+                                  }
+                                  onDataUpdate(newData)
+                                }
+                              }}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="选择类型" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="管理人员">管理人员</SelectItem>
-                                <SelectItem value="机械操作手">机械操作手</SelectItem>
-                                <SelectItem value="工人">工人</SelectItem>
+                                {laborerTypeNames.map((name) => (
+                                  <SelectItem key={name} value={name}>
+                                    {name}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </td>
@@ -863,35 +1062,20 @@ export function CalculationStep({
                             />
                           </td>
                           <td className="p-2 border">
-                            <Select
-                              value={item.factor.toString()}
-                              onValueChange={(value) => updateItem("labor", item.id, "factor", parseFloat(value))}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择因子" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="2.09">2.09</SelectItem>
-                                <SelectItem value="2.42">2.42</SelectItem>
-                                <SelectItem value="2.83">2.83</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <Input
+                              type="number"
+                              value={item.factor}
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border text-center">{item.emission}</td>
                           <td className="p-2 border">
-                            <Select
+                            <Input
                               value={item.scope}
-                              onValueChange={(value) => updateItem("labor", item.id, "scope", value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择范围" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="范围一">范围一</SelectItem>
-                                <SelectItem value="范围二">范围二</SelectItem>
-                                <SelectItem value="范围三">范围三</SelectItem>
-                              </SelectContent>
-                            </Select>
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border text-center">
                             <Button
@@ -915,6 +1099,19 @@ export function CalculationStep({
                   添加条目
                 </Button>
               </div>
+              
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>劳动者类型与生活碳排放因子联动说明：</strong>
+                  <br />
+                  选择劳动者类型后，系统会自动填充对应的生活碳排放因子（kg/人·天）和排放范围。
+                  <br />
+                  所有人员活动的排放范围均为"范围三"（其他间接排放）。
+                  <br />
+                  碳排放量将根据生活碳排放因子和累计有效工作日自动计算。
+                </AlertDescription>
+              </Alert>
             </div>
 
             {/* 临时用能碳排放计算 */}
@@ -946,13 +1143,36 @@ export function CalculationStep({
                           <td className="p-2 border">
                             <Select
                               value={item.category}
-                              onValueChange={(value) => updateItem("temporary", item.id, "category", value)}
+                              onValueChange={(value) => {
+                                const energyInfo = getTemporaryEnergyInfo(value)
+                                if (energyInfo) {
+                                  const newData = {
+                                    ...carbonData,
+                                    temporary: carbonData.temporary.map(t => {
+                                      if (t.id === item.id) {
+                                        return {
+                                          ...t,
+                                          category: value,
+                                          factor: energyInfo.factor,
+                                          scope: energyInfo.scope as EmissionScope
+                                        }
+                                      }
+                                      return t
+                                    })
+                                  }
+                                  onDataUpdate(newData)
+                                }
+                              }}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="选择类型" />
                               </SelectTrigger>
                               <SelectContent>
-                                <SelectItem value="生活用能">生活用能</SelectItem>
+                                {temporaryEnergyTypeNames.map((name) => (
+                                  <SelectItem key={name} value={name}>
+                                    {name}
+                                  </SelectItem>
+                                ))}
                               </SelectContent>
                             </Select>
                           </td>
@@ -964,38 +1184,12 @@ export function CalculationStep({
                             />
                           </td>
                           <td className="p-2 border">
-                            <Select
-                              value={item.factor.toString()}
-                              onValueChange={(value) => {
-                                const factor = parseFloat(value)
-                                const newData = {
-                                  ...carbonData,
-                                  temporary: carbonData.temporary.map(t => {
-                                    if (t.id === item.id) {
-                                      const consumption = t.consumption || 0
-                                      return {
-                                        ...t,
-                                        factor: factor,
-                                        emission: Number((consumption * factor).toFixed(2))
-                                      }
-                                    }
-                                    return t
-                                  })
-                                }
-                                onDataUpdate(newData)
-                              }}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择因子" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                {presetEmissionFactors.temporary.map((preset) => (
-                                  <SelectItem key={preset.category} value={preset.factor.toString()}>
-                                    {preset.factor}
-                                  </SelectItem>
-                                ))}
-                              </SelectContent>
-                            </Select>
+                            <Input
+                              type="number"
+                              value={item.factor}
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border text-center">{item.emission}</td>
                           <td className="p-2 border text-center">
@@ -1020,6 +1214,19 @@ export function CalculationStep({
                   添加条目
                 </Button>
               </div>
+              
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>临时用能类型与电网排放因子联动说明：</strong>
+                  <br />
+                  选择临时用能类型后，系统会自动填充对应的电网排放因子（t/(MW·h)）和排放范围。
+                  <br />
+                  临时用能的排放范围为"范围二"（间接排放-电力）。
+                  <br />
+                  碳排放量将根据电网排放因子和用电量自动计算。
+                </AlertDescription>
+              </Alert>
             </div>
           </CollapsibleContent>
         </Collapsible>
@@ -1070,18 +1277,18 @@ export function CalculationStep({
                             <Select
                               value={item.category}
                               onValueChange={(value) => {
-                                const preset = presetEmissionFactors.waste.find(p => p.category === value)
-                                if (preset) {
+                                const wasteInfo = getWasteTypeInfo(value)
+                                if (wasteInfo) {
                                   const newData = {
                                     ...carbonData,
                                     waste: carbonData.waste.map(w => {
                                       if (w.id === item.id) {
                                         return {
                                           ...w,
-                                          category: preset.category,
-                                          transportType: preset.transportType || "",
-                                          factor: preset.factor,
-                                          scope: preset.scope
+                                          category: value,
+                                          factor: wasteInfo.factor,
+                                          transportType: wasteInfo.transportType,
+                                          scope: wasteInfo.scope as EmissionScope
                                         }
                                       }
                                       return w
@@ -1095,9 +1302,9 @@ export function CalculationStep({
                                 <SelectValue placeholder="选择废弃物类型" />
                               </SelectTrigger>
                               <SelectContent>
-                                {presetEmissionFactors.waste.map((preset) => (
-                                  <SelectItem key={preset.category} value={preset.category}>
-                                    {preset.category}
+                                {wasteTypeNames.map((name) => (
+                                  <SelectItem key={name} value={name}>
+                                    {name}
                                   </SelectItem>
                                 ))}
                               </SelectContent>
@@ -1154,64 +1361,27 @@ export function CalculationStep({
                             />
                           </td>
                           <td className="p-2 border">
-                            <Select
+                            <Input
                               value={item.transportType || ""}
-                              onValueChange={(value) => updateItem("waste", item.id, "transportType", value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择运输类型" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="重型柴油货车运输(载重30t)">重型柴油货车运输(载重30t)</SelectItem>
-                              </SelectContent>
-                            </Select>
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border">
-                            <Select
-                              value={item.factor.toString()}
-                              onValueChange={(value) => {
-                                const factor = parseFloat(value)
-                                const newData = {
-                                  ...carbonData,
-                                  waste: carbonData.waste.map(w => {
-                                    if (w.id === item.id) {
-                                      const weight = w.transportWeight || 0
-                                      const distance = w.transportDistance || 0
-                                      return {
-                                        ...w,
-                                        factor: factor,
-                                        emission: Number((weight * distance * factor).toFixed(2))
-                                      }
-                                    }
-                                    return w
-                                  })
-                                }
-                                onDataUpdate(newData)
-                              }}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择因子" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="0.078">0.078</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <Input
+                              type="number"
+                              value={item.factor}
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border text-center">{item.emission}</td>
                           <td className="p-2 border">
-                            <Select
+                            <Input
                               value={item.scope}
-                              onValueChange={(value) => updateItem("waste", item.id, "scope", value)}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择范围" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="范围一">范围一</SelectItem>
-                                <SelectItem value="范围二">范围二</SelectItem>
-                                <SelectItem value="范围三">范围三</SelectItem>
-                              </SelectContent>
-                            </Select>
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border text-center">
                             <Button
@@ -1235,6 +1405,19 @@ export function CalculationStep({
                   添加条目
                 </Button>
               </div>
+              
+              <Alert>
+                <Info className="h-4 w-4" />
+                <AlertDescription>
+                  <strong>废弃物类型与运输碳排放因子联动说明：</strong>
+                  <br />
+                  选择废弃物类型后，系统会自动填充运输碳排放因子（0.078 kgCO₂/t·km）、运输汽车类型（重型柴油货车运输(载重30t)）和排放范围（范围一）。
+                  <br />
+                  所有废弃物类型的运输碳排放因子均为0.078 kgCO₂/t·km，这是基于重型柴油货车运输的标准值。
+                  <br />
+                  碳排放量将根据废弃物重量、运输距离和运输碳排放因子自动计算。
+                </AlertDescription>
+              </Alert>
             </div>
           </CollapsibleContent>
         </Collapsible>
@@ -1355,35 +1538,12 @@ export function CalculationStep({
                             </Select>
                           </td>
                           <td className="p-2 border">
-                            <Select
-                              value={item.factor.toString()}
-                              onValueChange={(value) => {
-                                const factor = parseFloat(value)
-                                const newData = {
-                                  ...carbonData,
-                                  carbonSink: carbonData.carbonSink.map(c => {
-                                    if (c.id === item.id) {
-                                      const consumption = c.consumption || 0
-                                      return {
-                                        ...c,
-                                        factor: factor,
-                                        emission: Number((consumption * factor).toFixed(2))
-                                      }
-                                    }
-                                    return c
-                                  })
-                                }
-                                onDataUpdate(newData)
-                              }}
-                            >
-                              <SelectTrigger>
-                                <SelectValue placeholder="选择系数" />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="3.4127">3.4127</SelectItem>
-                                <SelectItem value="344.076">344.076</SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <Input
+                              type="number"
+                              value={item.factor}
+                              readOnly
+                              className="bg-gray-50"
+                            />
                           </td>
                           <td className="p-2 border">
                             <Select
