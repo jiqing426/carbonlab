@@ -1,11 +1,12 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { FileText, Image as ImageIcon, X } from "lucide-react"
+import { FileText, Image as ImageIcon, X, ChevronDown, ChevronUp } from "lucide-react"
 import { ExperimentStep } from "./types"
 import Image from "next/image"
 import { useState } from "react"
 import { Dialog, DialogContent } from "@/components/ui/dialog"
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"
 
 interface InventoryStepProps {
   onComplete: () => void
@@ -15,46 +16,206 @@ interface InventoryStepProps {
 
 // 静态项目数据
 const staticProjectData = {
-  name: "某市生态城道路建设项目",
+  name: "健康谷路",
   description: "该项目为某市生态城道路建设工程，道路全长445.617m，红线宽40m，设计速度30km/h，机动车道采用双向四车道建设。健康谷路为兼有有轨电车的道，横断面具体布置为中央12米绿化带（远期有轨电车廊道）+2×7米机动车道+2×1.5米下沉式绿化带+2×2.5米非机动车道+2×3米人行道。有轨电车廊道实施前控制为绿化带。健康谷路全线采用沥青路面，路面总厚度90.6cm，路建结构方案为改性沥青混凝土面层+水泥稳定碎石基层+低剂量水泥稳定碎石底基层。"
 }
 
-// 静态工程量清单数据
-const staticInventory = [
+// 运输距离配置数据
+const transportConfig = {
+  roadbed: {
+    onSiteDistance: 220, // 场内运输运距
+    spoilDistance: 21,   // 外弃土方运距
+    unit: "米/千米"
+  },
+  pavement: {
+    waterStabilizedDistance: 20, // 水稳运距
+    asphaltDistance: 38,         // 沥青运距
+    truckCapacity: "30-36吨每车",
+    unit: "千米"
+  }
+}
+
+// 详细的工程量清单数据
+const detailedInventory = [
   { 
     id: "1", 
-    name: "路基土方开挖", 
-    unit: "立方米", 
+    serialNumber: "1",
+    projectCode: "010101",
+    projectName: "健康谷路",
+    unitProject: "路基工程",
+    subProject: "土方工程",
+    subItemProject: "挖一般土方",
+    projectFeatureDescription: "1.土壤类别：三类土\n2.挖土深度：2m以内\n3.弃土运距：21km",
+    material: "材料",
+    unit: "m³",
     quantity: 125000, 
-    description: "道路路基开挖土方量，包括表土清理和基础开挖" 
+    materialName: "土方",
+    totalMaterialQuantity: 125000,
+    materialUnit: "m³",
+    materialCarbonEmissionFactor: 8,
+    materialCarbonEmissionUnit: "kg CO2/m³",
+    materialCarbonEmission: 1000000,
+    transportedMaterial: "土方",
+    transportUnit: "m³",
+    transportQuantity: 125000,
+    materialWeight: 187500,
+    transportDistance: 21,
+    transportVehicleType: "重型柴油货车运输(载重30t)",
+    transportCarbonEmissionFactor: 0.078,
+    transportCarbonEmissionUnit: "kgCO2/t-km",
+    transportCarbonEmission: 306.5625,
+    totalCarbonEmission: 1000306.56,
+    remarks: "弃土运输"
   },
   { 
     id: "2", 
-    name: "路面混凝土浇筑", 
-    unit: "立方米", 
-    quantity: 18500, 
-    description: "道路路面C30混凝土浇筑，厚度25cm" 
+    serialNumber: "2",
+    projectCode: "010201",
+    projectName: "健康谷路",
+    unitProject: "路基工程",
+    subProject: "坡面防护及排水沟",
+    subItemProject: "排水沟、截水沟",
+    projectFeatureDescription: "1.预制排水沟安装，预制块采用C25砼预制，预制块厚度8cm\n2.M7.5水泥砂浆砌缝\n3.5cm砂砾石垫层",
+    material: "材料",
+    unit: "m³",
+    quantity: 155.28,
+    materialName: "C25混凝土预制块",
+    totalMaterialQuantity: 155.28,
+    materialUnit: "m³",
+    materialCarbonEmissionFactor: 255,
+    materialCarbonEmissionUnit: "kg CO2/m³",
+    materialCarbonEmission: 39596.1,
+    transportedMaterial: "C25混凝土",
+    transportUnit: "m³",
+    transportQuantity: 155.28,
+    materialWeight: 372.672,
+    transportDistance: 10,
+    transportVehicleType: "重型柴油货车运输(载重30t)",
+    transportCarbonEmissionFactor: 0.078,
+    transportCarbonEmissionUnit: "kgCO2/t-km",
+    transportCarbonEmission: 290.68,
+    totalCarbonEmission: 39886.78,
+    remarks: "预制块运输"
   },
   { 
     id: "3", 
-    name: "钢筋使用", 
-    unit: "吨", 
-    quantity: 2800, 
-    description: "桥梁和结构用HRB400钢筋" 
+    serialNumber: "3",
+    projectCode: "020101",
+    projectName: "健康谷路",
+    unitProject: "路面工程",
+    subProject: "基层",
+    subItemProject: "水泥稳定碎石基层",
+    projectFeatureDescription: "1.水泥稳定碎石基层，厚度20cm\n2.水泥含量：5%\n3.压实度：≥98%",
+    material: "材料",
+    unit: "m³",
+    quantity: 3562.34,
+    materialName: "水泥稳定碎石",
+    totalMaterialQuantity: 3562.34,
+    materialUnit: "m³",
+    materialCarbonEmissionFactor: 180,
+    materialCarbonEmissionUnit: "kg CO2/m³",
+    materialCarbonEmission: 641221.2,
+    transportedMaterial: "水泥稳定碎石",
+    transportUnit: "m³",
+    transportQuantity: 3562.34,
+    materialWeight: 8549.616,
+    transportDistance: 20,
+    transportVehicleType: "重型柴油货车运输(载重30t)",
+    transportCarbonEmissionFactor: 0.078,
+    transportCarbonEmissionUnit: "kgCO2/t-km",
+    transportCarbonEmission: 13337.4,
+    totalCarbonEmission: 654558.6,
+    remarks: "水稳材料运输"
   },
   { 
     id: "4", 
-    name: "沥青路面铺设", 
-    unit: "平方米", 
-    quantity: 180000, 
-    description: "AC-20沥青混凝土路面铺设，厚度8cm" 
+    serialNumber: "4",
+    projectCode: "020201",
+    projectName: "健康谷路",
+    unitProject: "路面工程",
+    subProject: "面层",
+    subItemProject: "沥青混凝土面层",
+    projectFeatureDescription: "1.改性沥青混凝土面层，厚度8cm\n2.沥青含量：4.5%\n3.压实度：≥96%",
+    material: "材料",
+    unit: "m²",
+    quantity: 17811.7,
+    materialName: "改性沥青混凝土",
+    totalMaterialQuantity: 1424.936,
+    materialUnit: "m³",
+    materialCarbonEmissionFactor: 450,
+    materialCarbonEmissionUnit: "kg CO2/m³",
+    materialCarbonEmission: 641221.2,
+    transportedMaterial: "改性沥青混凝土",
+    transportUnit: "m³",
+    transportQuantity: 1424.936,
+    materialWeight: 3419.846,
+    transportDistance: 38,
+    transportVehicleType: "重型柴油货车运输(载重30t)",
+    transportCarbonEmissionFactor: 0.078,
+    transportCarbonEmissionUnit: "kgCO2/t-km",
+    transportCarbonEmission: 10125.5,
+    totalCarbonEmission: 651346.7,
+    remarks: "沥青材料运输"
   },
   { 
     id: "5", 
-    name: "碎石垫层", 
-    unit: "立方米", 
-    quantity: 45000, 
-    description: "路基级配碎石垫层，厚度30cm" 
+    serialNumber: "5",
+    projectCode: "030101",
+    projectName: "健康谷路",
+    unitProject: "绿化工程",
+    subProject: "植被种植",
+    subItemProject: "乔木种植",
+    projectFeatureDescription: "1.香樟种植，胸径8-10cm\n2.种植密度：6m×6m\n3.养护期：1年",
+    material: "材料",
+    unit: "株",
+    quantity: 128,
+    materialName: "香樟",
+    totalMaterialQuantity: 128,
+    materialUnit: "株",
+    materialCarbonEmissionFactor: 344.076,
+    materialCarbonEmissionUnit: "kg CO2/株",
+    materialCarbonEmission: 44041.73,
+    transportedMaterial: "香樟苗木",
+    transportUnit: "株",
+    transportQuantity: 128,
+    materialWeight: 25.6,
+    transportDistance: 15,
+    transportVehicleType: "中型货车运输(载重10t)",
+    transportCarbonEmissionFactor: 0.12,
+    transportCarbonEmissionUnit: "kgCO2/t-km",
+    transportCarbonEmission: 46.08,
+    totalCarbonEmission: 44087.81,
+    remarks: "苗木运输"
+  },
+  {
+    id: "6",
+    serialNumber: "6",
+    projectCode: "030201",
+    projectName: "健康谷路",
+    unitProject: "绿化工程",
+    subProject: "植被种植",
+    subItemProject: "地被植物",
+    projectFeatureDescription: "1.地被植物种植，覆盖率≥95%\n2.植物种类：麦冬、鸢尾\n3.种植密度：25株/m²",
+    material: "材料",
+    unit: "m²",
+    quantity: 4614.26,
+    materialName: "地被植物",
+    totalMaterialQuantity: 4614.26,
+    materialUnit: "m²",
+    materialCarbonEmissionFactor: 3.4127,
+    materialCarbonEmissionUnit: "kg CO2/m²",
+    materialCarbonEmission: 15747.09,
+    transportedMaterial: "地被植物",
+    transportUnit: "m²",
+    transportQuantity: 4614.26,
+    materialWeight: 461.426,
+    transportDistance: 8,
+    transportVehicleType: "轻型货车运输(载重5t)",
+    transportCarbonEmissionFactor: 0.15,
+    transportCarbonEmissionUnit: "kgCO2/t-km",
+    transportCarbonEmission: 553.71,
+    totalCarbonEmission: 16300.8,
+    remarks: "植被运输"
   }
 ]
 
@@ -64,6 +225,7 @@ export function InventoryStep({
   onPrevious
 }: InventoryStepProps) {
   const [showImage, setShowImage] = useState(false)
+  const [showTransportConfig, setShowTransportConfig] = useState(false)
 
   return (
     <Card>
@@ -94,47 +256,225 @@ export function InventoryStep({
 
         <Separator />
 
+        {/* 运输距离配置 */}
+        <div className="space-y-4">
+          <Collapsible open={showTransportConfig} onOpenChange={setShowTransportConfig}>
+            <CollapsibleTrigger asChild>
+              <Button variant="outline" className="w-full justify-between">
+                <span>运输距离配置</span>
+                {showTransportConfig ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="space-y-4 mt-4">
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* 路基工程运输 */}
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <h4 className="font-medium text-gray-800 mb-3">路基工程运输车运距</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>场内运输运距：</span>
+                      <span className="font-mono">{transportConfig.roadbed.onSiteDistance}米</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>外弃土方运距：</span>
+                      <span className="font-mono">{transportConfig.roadbed.spoilDistance}千米</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 路面工程运输 */}
+                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
+                  <h4 className="font-medium text-gray-800 mb-3">路面工程运输车运距</h4>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span>供应商与现场距离：</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>水稳运距：</span>
+                      <span className="font-mono">{transportConfig.pavement.waterStabilizedDistance}千米</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>沥青运距：</span>
+                      <span className="font-mono">{transportConfig.pavement.asphaltDistance}千米</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>货车吨位：</span>
+                      <span className="font-mono">{transportConfig.pavement.truckCapacity}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CollapsibleContent>
+          </Collapsible>
+        </div>
+
+        <Separator />
+
         {/* 工程量清单 */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">清单一：交通基础设施项目工程量清单</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">清单一：交通基础设施项目工程量清单（部分数据）</h3>
+            <Button 
+              onClick={() => {
+                const link = document.createElement('a')
+                link.href = '/清单一：交通基础设施项目工程量清单.xlsx'
+                link.download = '清单一：交通基础设施项目工程量清单.xlsx'
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+              }}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4" />
+              下载完整表格
+            </Button>
+          </div>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-gray-300 text-xs">
               <thead>
-                <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-4 py-2 text-center">序号</th>
-                  <th className="border border-gray-300 px-4 py-2 text-center">单位工程</th>
-                  <th className="border border-gray-300 px-4 py-2 text-center">分部工程</th>
-                  <th className="border border-gray-300 px-4 py-2 text-center">分项工程</th>
-                  <th className="border border-gray-300 px-4 py-2 text-center">项目特征描述</th>
-                  <th className="border border-gray-300 px-4 py-2 text-center">计量单位</th>
-                  <th className="border border-gray-300 px-4 py-2 text-center">工程量</th>
-                  <th className="border border-gray-300 px-4 py-2 text-center">备注</th>
+                <tr>
+                  {/* 第一组：白色背景 - 项目识别与描述 */}
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-white min-w-[60px]">序号</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-white min-w-[100px]">项目编码</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-white min-w-[80px]">单位工程</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-white min-w-[80px]">分部工程</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-white min-w-[80px]">分项工程</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-white min-w-[200px]">项目特征描述</th>
+                  
+                  {/* 第二组：黄色背景 - 材料与数量信息 */}
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-yellow-100 min-w-[60px]">材料</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-yellow-100 min-w-[80px]">计量单位</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-yellow-100 min-w-[80px]">工程量</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-yellow-100 min-w-[120px]">材料名称</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-yellow-100 min-w-[80px]">材料总量</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-yellow-100 min-w-[60px]">单位</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-yellow-100 min-w-[100px]">材料碳排放因子</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-yellow-100 min-w-[80px]">单位</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-yellow-100 min-w-[150px]">碳排放量=材料消耗量*材料碳排放因子</th>
+                  
+                  {/* 第三组：浅蓝色背景 - 运输详情 */}
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-blue-100 min-w-[100px]">运输材料</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-blue-100 min-w-[80px]">计量单位</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-blue-100 min-w-[80px]">工程量</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-blue-100 min-w-[100px]">材料重量(t)</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-blue-100 min-w-[100px]">运输距离(KM)</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-blue-100 min-w-[180px]">运输汽车类型</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-blue-100 min-w-[200px]">运输碳排放因子(运输汽车运输单位重量或体积材料每千米所消耗碳排放量)</th>
+                  <th className="border border-gray-300 px-3 py-3 text-center bg-blue-100 min-w-[100px]">单位</th>
+                  
+                  {/* 第四组：白色背景 - 总碳排放和备注 */}
                 </tr>
               </thead>
               <tbody>
+                {/* 第1行 - 排水沟、截水沟 */}
                 <tr className="hover:bg-gray-50">
-                  <td className="border border-gray-300 px-4 py-2 text-center">1</td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">路基工程</td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">坡面防护及排水沟</td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">排水沟、截水沟</td>
-                  <td className="border border-gray-300 px-4 py-2 text-left text-sm">
-                    1.预制排水沟安装，预制块采用C25砼预制，预制块厚度8cm<br />
-                    2.M7.5水泥砂浆砌缝<br />
-                    3.5cm砂砾石垫层
-                  </td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">m³</td>
-                  <td className="border border-gray-300 px-4 py-2 text-center font-mono">155.28</td>
-                    <td className="border border-gray-300 px-4 py-2 text-center">
-                    <Button 
-                      variant="ghost" 
-                      size="sm" 
-                      className="p-0 h-auto"
-                      onClick={() => setShowImage(true)}
-                    >
-                      <ImageIcon className="w-6 h-6" />
-                    </Button>
-                    </td>
-                  </tr>
+                  <td className="border border-gray-300 px-3 py-3 text-center">1</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">040201022<br />001</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">路基工程</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">坡面防护<br />及排水沟</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">排水沟、截水<br />沟</td>
+                  <td className="border border-gray-300 px-3 py-3 text-left text-xs whitespace-pre-line">1.预制排水沟安装,预制块采用C25砼预制,预制块厚度8cm<br />2.M7.5水泥砂浆砌缝<br />3.3.5cm砂砾石垫层</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">C25砼预制</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">m³</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">155.28</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">C25砼预制</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">155.28</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">m³</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">255</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">kg CO2/m³</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">39596.4</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">C25混凝土</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">m³</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">155.28</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">372.672</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">40</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">重型柴油货车运输(载重30t)</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">0.078</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">kgCO2/t·km</td>
+                </tr>
+                
+                {/* 第2行 - 施工便道 */}
+                <tr className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-3 py-3 text-center">2</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">040203007<br />005</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">路基工程</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">施工便道<br />工程</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">水泥混凝土</td>
+                  <td className="border border-gray-300 px-3 py-3 text-left text-xs whitespace-pre-line">1.混凝土强度等级: C30混凝土<br />2.厚度: 20cm厚<br />3.部位: 施工便道<br />4.含道路切灌缝,养护,防滑条</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">C30混凝土</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">m²</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">4206</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">C30混凝土</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">841.2</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">m³</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">295</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">kg CO2e/m³</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">248154</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">C30混凝土</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">m²</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">4206</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">1985.232</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">40</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">重型柴油货车运输(载重30t)</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">0.078</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">kgCO2/t·km</td>
+                </tr>
+                
+                {/* 第3行 - 保通路 */}
+                <tr className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-3 py-3 text-center">3</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">040202015<br />005</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">路基工程</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">保通路</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">水泥稳定碎<br />(砾)石</td>
+                  <td className="border border-gray-300 px-3 py-3 text-left text-xs whitespace-pre-line">1.部位:保通路<br />2.水泥含量:4%<br />3.厚度:20cm<br />4.其他:详施工图设计</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center text-xs">水泥(标准号GB/T208-94,如普通硅酸盐水泥密度3.0~3.15g/cm³,普通硅酸盐水泥1.2-1.3吨/立方米)</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">m²</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">546.55</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">普通硅酸盐水泥(市场平均)</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">5.4655</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">t</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">735</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">kg CO2/t</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">4017.1425</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">水泥</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">m²</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">546.55</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">5.24688</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">500</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">重型柴油货车运输(载重30t)</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">0.078</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">kgCO2/t·km</td>
+                </tr>
+                
+                {/* 第4行 - 保通路水泥混凝土 */}
+                <tr className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-3 py-3 text-center">4</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">040203007<br />004</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">路基工程</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">保通路</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">水泥混凝土</td>
+                  <td className="border border-gray-300 px-3 py-3 text-left text-xs whitespace-pre-line">1.混凝土强度等级: C30混凝土<br />2.厚度: 20cm厚<br />3.部位: 保通路<br />4.含切灌缝</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">C30混凝土</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">m²</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">501.81</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">C30混凝土</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">100.362</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">m³</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">295</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">kg CO2/m³</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">29606.79</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">C30混凝土</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">m²</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">501.81</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">236.85432</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">40</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">重型柴油货车运输(载重30t)</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">0.078</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">kgCO2/t·km</td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -142,29 +482,146 @@ export function InventoryStep({
 
         <Separator />
 
-        {/* 清单二：道路施工进度计划对应人员、机械配置 */}
+        {/*  */}
         <div className="space-y-4">
-          <h3 className="text-lg font-semibold">清单二：道路施工进度计划对应人员、机械配置</h3>
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-semibold">清单二：道路施工进度计划对应人员、机械配置（部分数据）</h3>
+            <Button 
+              onClick={() => {
+                const link = document.createElement('a')
+                link.href = '/清单二：道路施工进度计划对应人员、机械配置.xlsx'
+                link.download = '清单二：道路施工进度计划对应人员、机械配置.xlsx'
+                document.body.appendChild(link)
+                link.click()
+                document.body.removeChild(link)
+              }}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+            >
+              <FileText className="w-4 h-4" />
+              下载完整表格
+            </Button>
+          </div>
           <div className="overflow-x-auto">
-            <table className="w-full border-collapse border border-gray-300">
+            <table className="w-full border-collapse border border-gray-300 text-xs">
               <thead>
                 <tr className="bg-gray-100">
-                  <th className="border border-gray-300 px-4 py-2 text-center">序号</th>
-                  <th className="border border-gray-300 px-4 py-2 text-center">分部工程</th>
-                  <th className="border border-gray-300 px-4 py-2 text-center">分项工程</th>
-                  <th className="border border-gray-300 px-4 py-2 text-center">人员数量</th>
-                  <th className="border border-gray-300 px-4 py-2 text-center">机械</th>
-                  <th className="border border-gray-300 px-4 py-2 text-center">有效工作日（天）</th>
+                  <th className="border border-gray-300 px-4 py-4 text-center min-w-[80px]">序号</th>
+                  <th className="border border-gray-300 px-4 py-4 text-center min-w-[120px]">分部工程</th>
+                  <th className="border border-gray-300 px-4 py-4 text-center min-w-[150px]">分项工程</th>
+                  <th className="border border-gray-300 px-4 py-4 text-center min-w-[120px]">人员数量</th>
+                  <th className="border border-gray-300 px-4 py-4 text-center min-w-[180px]">生活碳排放因子(kg/人・天)</th>
+                  <th className="border border-gray-300 px-4 py-4 text-center min-w-[300px]">碳排放量=生活碳排放因子*人员数量*有效工作日（天）</th>
+                  <th className="border border-gray-300 px-4 py-4 text-center min-w-[250px]">机械</th>
+                  <th className="border border-gray-300 px-4 py-4 text-center min-w-[100px]">机械名称</th>
+                  <th className="border border-gray-300 px-4 py-4 text-center min-w-[150px]">柴油</th>
+                  <th className="border border-gray-300 px-4 py-4 text-center min-w-[350px]">电(kWh) 【0.5810 t/(CO2/MWh)】 1 kWh = 0.001 MWh</th>
+                  <th className="border border-gray-300 px-4 py-4 text-center min-w-[350px]">机械碳排放因子(机械设备每台班碳排放量) KgCO2/台班</th>
+                  <th className="border border-gray-300 px-4 py-4 text-center min-w-[350px]">总排放量=机械碳排放因子*有效工作日(天)</th>
+                  <th className="border border-gray-300 px-4 py-4 text-center min-w-[120px]">有效工作日(天)</th>
+                  <th className="border border-gray-300 px-4 py-4 text-center min-w-[120px]">建设施工阶段</th>
                 </tr>
               </thead>
               <tbody>
+                {/* 行数据将在这里重新添加 */}
+                {/* 第1行 - 管理人员和机械操作手 */}
                 <tr className="hover:bg-gray-50">
-                  <td className="border border-gray-300 px-4 py-2 text-center">1</td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">路基工程</td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">-</td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">管理人员4人；机械操作手3人</td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">挖机两台（型号220一台，160一台）；装载机一台（型号160）；后八轮十台</td>
-                  <td className="border border-gray-300 px-4 py-2 text-center">100天</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center" rowSpan={5}>1.1.1</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center" rowSpan={5}>路基工程</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center" rowSpan={5}></td>
+                  <td className="border border-gray-300 px-3 py-3 text-center" rowSpan={5}>7人</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center" rowSpan={5}>
+                    <Image
+                      src="/劳动者生活碳排放因子.webp"
+                      alt="劳动者生活碳排放因子"
+                      width={200}
+                      height={150}
+                      className="w-full h-auto max-w-[200px] mx-auto"
+                    />
+                  </td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono" rowSpan={5}>1562.00</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">挖机两台（型号220一台，160一台）；装载机一台（型号160）；后八轮十台</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">斗容量 1.25m3 履带式单斗挖掘机</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono"></td>
+                  <td className="border border-gray-300 px-3 py-3 text-center"></td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono"></td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">24908.5</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">100天</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">53279.3</td>
+                </tr>
+                
+                {/* 第2行 - 挖机220 */}
+                <tr className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-3 py-3 text-center">挖机一台 (型号220): 型号是220就是22吨级的斗容量在1.1立方左右。</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">斗容量 1.25m3 履带式单斗挖掘机</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">80.35</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center"></td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">249.085</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">24908.5</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">100天</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">
+                    <Image
+                      src="/国机重工常林挖掘机.webp"
+                      alt="国机重工常林挖掘机"
+                      width={150}
+                      height={100}
+                      className="w-full h-auto max-w-[150px] mx-auto"
+                    />
+                  </td>
+                </tr>
+                
+                {/* 第3行 - 挖机160 */}
+                <tr className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-3 py-3 text-center">挖机一台 (型号160): 型号是160就是16吨级的斗容量在0.65立方左右。</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">斗容量 0.6m3 履带式单斗挖掘机</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">37.45</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center"></td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">116.095</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">11609.5</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">100天</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">
+                    <Image
+                      src="/小松挖掘机.webp"
+                      alt="小松挖掘机"
+                      width={150}
+                      height={100}
+                      className="w-full h-auto max-w-[150px] mx-auto"
+                    />
+                  </td>
+                </tr>
+                
+                {/* 第4行 - 装载机160 */}
+                <tr className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-3 py-3 text-center">装载机一台 (型号160)</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">斗容量 1.0m3 轮胎式装载机</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">49.03</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center"></td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">151.993</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center font-mono">15199.3</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">100天</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">
+                    <Image
+                      src="/徐工轮式装载机参数配置.webp"
+                      alt="徐工轮式装载机参数配置"
+                      width={150}
+                      height={100}
+                      className="w-full h-auto max-w-[150px] mx-auto"
+                    />
+                  </td>
+                </tr>
+                
+                {/* 第5行 - 后八轮十台 */}
+                <tr className="hover:bg-gray-50">
+                  <td className="border border-gray-300 px-3 py-3 text-center">后八轮十台 (30-36吨)</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">装载质量30t以内自卸汽车</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center"></td>
+                  <td className="border border-gray-300 px-3 py-3 text-center"></td>
+                  <td className="border border-gray-300 px-3 py-3 text-center"></td>
+                  <td className="border border-gray-300 px-3 py-3 text-center"></td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">100天</td>
+                  <td className="border border-gray-300 px-3 py-3 text-center">
+                  </td>
                 </tr>
               </tbody>
             </table>

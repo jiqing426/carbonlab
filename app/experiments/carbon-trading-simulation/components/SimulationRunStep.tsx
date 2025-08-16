@@ -924,16 +924,16 @@ export function SimulationRunStep({ simulationData, onDataUpdate, onNext, onPrev
                 <ChevronRight className="mr-2 h-4 w-4" />
                 确认物料采购
               </Button>
-            </div>
+                      </div>
             
             {materialCost > cashAsset && (
               <div className="text-center">
                 <Button onClick={restartSimulation} className="bg-blue-600 hover:bg-blue-700">
                   重新开始经营
                 </Button>
-              </div>
+                  </div>
             )}
-          </div>
+                </div>
         )
         
       case "production":
@@ -953,7 +953,7 @@ export function SimulationRunStep({ simulationData, onDataUpdate, onNext, onPrev
                     </div>
               <div className="space-y-3">
                 <h4 className="font-semibold text-gray-800">生产过程</h4>
-                <div>
+                    <div>
                   <Label htmlFor="productionQuantity">生产数量（个）：</Label>
                   <Input
                     id="productionQuantity"
@@ -971,13 +971,13 @@ export function SimulationRunStep({ simulationData, onDataUpdate, onNext, onPrev
                   <p className="text-xs text-gray-500 mt-1">
                     年产能上限：40个 | 可用产能：{Math.min(orderQuantity, materialAmount, Math.floor(totalPower / 8000), 40)} 个
                   </p>
-                </div>
+                    </div>
                 <div className="bg-cyan-50 p-3 rounded">
                   <p><strong>生产需要消耗物料：</strong>{productionQuantity} 包</p>
                   <p><strong>生产需要消耗电力：</strong>{(productionQuantity * 8000).toLocaleString()} 度</p>
                   <p><strong>生产所消耗碳汇：</strong>{(productionQuantity * 120000).toLocaleString()} kg</p>
+                  </div>
                 </div>
-              </div>
             </div>
             <div className="flex justify-center">
               <Button onClick={handleProduction} className="bg-cyan-600 hover:bg-cyan-700">

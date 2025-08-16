@@ -85,7 +85,7 @@ export function ResultAnalysisStep({ simulationData, onPrevious, onComplete, yea
             <div className="text-center p-4 bg-purple-50 rounded-lg">
               <div className="text-sm text-gray-500">生产线资产</div>
               <div className="text-2xl font-bold text-purple-600">{finalLineAsset.toLocaleString()} 元</div>
-            </div>
+              </div>
             <div className="text-center p-4 bg-green-50 rounded-lg">
               <div className="text-sm text-gray-500">平均碳标签</div>
               <div className="text-2xl font-bold text-green-600">{avgCarbonLabel.toFixed(2)} kg/个</div>
@@ -101,7 +101,7 @@ export function ResultAnalysisStep({ simulationData, onPrevious, onComplete, yea
             <div className="text-center p-4 bg-cyan-50 rounded-lg">
               <div className="text-sm text-gray-500">总碳排放</div>
               <div className="text-2xl font-bold text-cyan-600">{totalCarbonEmission.toLocaleString()} kg</div>
-            </div>
+              </div>
             <div className="text-center p-4 bg-pink-50 rounded-lg">
               <div className="text-sm text-gray-500">物料库存</div>
               <div className="text-xl font-bold text-pink-600">{finalMaterialStock.toLocaleString()} 包</div>
@@ -155,15 +155,15 @@ export function ResultAnalysisStep({ simulationData, onPrevious, onComplete, yea
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">累计配额：</span>
                   <span className="font-medium">{totalAllowance.toLocaleString()} kg</span>
-                </div>
+                      </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">已使用配额：</span>
                   <span className="font-medium">{totalAllowanceUsed.toLocaleString()} kg</span>
-                </div>
+                        </div>
                 <div className="flex justify-between items-center">
                   <span className="text-gray-600">配额交易收入：</span>
                   <span className="font-medium">{totalAllowanceTraded.toLocaleString()} 元</span>
-                </div>
+                  </div>
               </div>
             </div>
 
@@ -171,7 +171,7 @@ export function ResultAnalysisStep({ simulationData, onPrevious, onComplete, yea
               <div className="text-lg font-bold mb-1">升级历史记录</div>
               <div className="text-xs text-gray-500 mb-3">
                 升级标准：左轴为累计升级等级（折线），右轴为当年投入金额（柱状），节能/减排分色。
-              </div>
+                      </div>
               <ResponsiveContainer width="100%" height={350}>
                 <ComposedChart data={upgradeData} margin={{ top: 20, right: 120, left: 0, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" />
@@ -467,9 +467,9 @@ export function ResultAnalysisStep({ simulationData, onPrevious, onComplete, yea
                   }
                   return successFactors.map((factor, index) => (
                     <li key={index} className="flex items-start gap-2">
-                      <span className="text-green-600 mt-1">✓</span>
+                  <span className="text-green-600 mt-1">✓</span>
                       <span>{factor}</span>
-                    </li>
+                </li>
                   ))
                 })()}
               </ul>
@@ -497,9 +497,9 @@ export function ResultAnalysisStep({ simulationData, onPrevious, onComplete, yea
                   }
                   return suggestions.map((suggestion, index) => (
                     <li key={index} className="flex items-start gap-2">
-                      <span className="text-blue-600 mt-1">→</span>
+                  <span className="text-blue-600 mt-1">→</span>
                       <span>{suggestion}</span>
-                    </li>
+                </li>
                   ))
                 })()}
               </ul>
