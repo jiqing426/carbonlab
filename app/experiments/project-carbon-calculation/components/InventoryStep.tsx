@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
-import { FileText, Image as ImageIcon, X, ChevronDown, ChevronUp } from "lucide-react"
+import { FileText, Image as ImageIcon, X, ChevronDown, ChevronUp, Building2, Truck, Calculator, BarChart3, Info, Download, Users, Leaf } from "lucide-react"
 import { ExperimentStep } from "./types"
 import Image from "next/image"
 import { useState } from "react"
@@ -225,95 +225,75 @@ export function InventoryStep({
   onPrevious
 }: InventoryStepProps) {
   const [showImage, setShowImage] = useState(false)
-  const [showTransportConfig, setShowTransportConfig] = useState(false)
+
+  // 计算统计数据
+  const totalMaterials = detailedInventory.length
+  const totalQuantity = detailedInventory.reduce((sum, item) => sum + item.quantity, 0)
+  const totalCarbonEmission = detailedInventory.reduce((sum, item) => sum + item.totalCarbonEmission, 0)
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <FileText className="w-5 h-5 mr-2" />
-          工程内容清单
-        </CardTitle>
-        <CardDescription>
-          以下为本次实验的工程量清单数据，用于碳核算计算
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* 项目基本信息 */}
-        <div className="space-y-4">
-          <h3 className="text-lg font-semibold">项目基本信息</h3>
-          <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-            <div>
-              <span className="font-medium text-gray-700"><strong>项目名称</strong>：</span>
-              <span className="text-gray-900">{staticProjectData.name}</span>
+    <div className="space-y-6">
+      {/* 页面标题区域 */}
+      <div className="text-center space-y-4 bg-gradient-to-r from-blue-50 to-indigo-50 p-8 rounded-2xl border border-blue-200">
+        <div className="flex items-center justify-center space-x-3">
+          <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center">
+            <Building2 className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-800">工程清单内容</h2>
+        </div>
+        <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          查看项目工程量数据，为后续碳核算计算提供基础数据支撑
+        </p>
+      </div>
+
+      {/* 项目基本信息 */}
+      <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-gray-50">
+        <CardHeader className="bg-gradient-to-r from-emerald-50 to-teal-50 border-b border-emerald-200">
+          <CardTitle className="flex items-center text-emerald-800">
+            <FileText className="w-5 h-5 mr-2" />
+            项目基本信息
+          </CardTitle>
+          <CardDescription className="text-emerald-700">
+            项目概况和建设内容描述
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-6 space-y-4">
+          <div className="space-y-4">
+            <div className="flex items-start space-x-3">
+              <div className="w-3 h-3 bg-emerald-500 rounded-full mt-2"></div>
+              <div className="flex-1">
+                <span className="font-semibold text-gray-700">项目名称：</span>
+                <p className="text-gray-900 mt-1">{staticProjectData.name}</p>
+              </div>
             </div>
-            <div>
-              <span className="font-medium text-gray-700"><strong>项目描述</strong>：</span>
-              <p className="text-gray-900 mt-1">{staticProjectData.description}</p>
+            <div className="flex items-start space-x-3">
+              <div className="w-3 h-3 bg-emerald-500 rounded-full mt-2"></div>
+              <div className="flex-1">
+                <span className="font-semibold text-gray-700">项目描述：</span>
+                <p className="text-gray-900 mt-1 text-sm leading-relaxed">{staticProjectData.description}</p>
+              </div>
             </div>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <Separator />
-
-        {/* 运输距离配置 */}
-        <div className="space-y-4">
-          <Collapsible open={showTransportConfig} onOpenChange={setShowTransportConfig}>
-            <CollapsibleTrigger asChild>
-              <Button variant="outline" className="w-full justify-between">
-                <span>运输距离配置</span>
-                {showTransportConfig ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="space-y-4 mt-4">
-              <div className="grid md:grid-cols-2 gap-6">
-                {/* 路基工程运输 */}
-                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                  <h4 className="font-medium text-gray-800 mb-3">路基工程运输车运距</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>场内运输运距：</span>
-                      <span className="font-mono">{transportConfig.roadbed.onSiteDistance}米</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>外弃土方运距：</span>
-                      <span className="font-mono">{transportConfig.roadbed.spoilDistance}千米</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* 路面工程运输 */}
-                <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
-                  <h4 className="font-medium text-gray-800 mb-3">路面工程运输车运距</h4>
-                  <div className="space-y-2 text-sm">
-                    <div className="flex justify-between">
-                      <span>供应商与现场距离：</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>水稳运距：</span>
-                      <span className="font-mono">{transportConfig.pavement.waterStabilizedDistance}千米</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>沥青运距：</span>
-                      <span className="font-mono">{transportConfig.pavement.asphaltDistance}千米</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>货车吨位：</span>
-                      <span className="font-mono">{transportConfig.pavement.truckCapacity}</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </CollapsibleContent>
-          </Collapsible>
-        </div>
-
-        <Separator />
-
-        {/* 工程量清单 */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">清单一：交通基础设施项目工程量清单（部分数据）</h3>
+      {/* 工程量清单卡片 */}
+      <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-blue-50">
+        <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-blue-200">
+          <CardTitle className="flex items-center text-blue-800">
+            <BarChart3 className="w-5 h-5 mr-2" />
+            清单一：交通基础设施项目工程量清单
+          </CardTitle>
+          <CardDescription className="text-blue-700">
+            项目主要工程量数据和碳排放因子信息
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+              <span className="text-sm text-blue-600 font-medium">包含6个主要工程项目的详细数据</span>
+            </div>
             <Button 
               onClick={() => {
                 const link = document.createElement('a')
@@ -325,13 +305,72 @@ export function InventoryStep({
               }}
               variant="outline"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-blue-50 border-blue-200 text-blue-700 hover:bg-blue-100"
             >
-              <FileText className="w-4 h-4" />
+              <Download className="w-4 h-4" />
               下载完整表格
             </Button>
           </div>
-          <div className="overflow-x-auto">
+
+          {/* 运输距离配置 */}
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <h4 className="font-semibold text-blue-800 mb-3 flex items-center">
+              <Truck className="w-4 h-4 mr-2" />
+              运输距离配置
+            </h4>
+            <div className="grid md:grid-cols-2 gap-4">
+              {/* 路基工程运输 */}
+              <div className="bg-white p-3 rounded-lg border border-blue-200">
+                <h5 className="font-medium text-blue-700 mb-2 text-sm">路基工程运输车运距</h5>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-blue-600">场内运输运距：</span>
+                    <span className="font-mono font-semibold text-blue-800">{transportConfig.roadbed.onSiteDistance}米</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-blue-600">外弃土方运距：</span>
+                    <span className="font-mono font-semibold text-blue-800">{transportConfig.roadbed.spoilDistance}千米</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* 路面工程运输 */}
+              <div className="bg-white p-3 rounded-lg border border-blue-200">
+                <h5 className="font-medium text-blue-700 mb-2 text-sm">路面工程运输车运距</h5>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between items-center">
+                    <span className="text-blue-600">水稳运距：</span>
+                    <span className="font-mono font-semibold text-blue-800">{transportConfig.pavement.waterStabilizedDistance}千米</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-blue-600">沥青运距：</span>
+                    <span className="font-mono font-semibold text-blue-800">{transportConfig.pavement.asphaltDistance}千米</span>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <span className="text-blue-600">货车吨位：</span>
+                    <span className="font-mono font-semibold text-blue-800">{transportConfig.pavement.truckCapacity}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* 表格说明 */}
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <Info className="w-5 h-5 text-blue-600 mt-0.5" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium mb-1">表格说明：</p>
+                <ul className="space-y-1 text-xs">
+                  <li>• <span className="bg-white px-2 py-1 rounded">白色背景</span>：项目识别与描述信息</li>
+                  <li>• <span className="bg-yellow-100 px-2 py-1 rounded">黄色背景</span>：材料与数量信息</li>
+                  <li>• <span className="bg-blue-100 px-2 py-1 rounded">蓝色背景</span>：运输详情信息</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
             <table className="w-full border-collapse border border-gray-300 text-xs">
               <thead>
                 <tr>
@@ -369,7 +408,7 @@ export function InventoryStep({
               </thead>
               <tbody>
                 {/* 第1行 - 排水沟、截水沟 */}
-                <tr className="hover:bg-gray-50">
+                <tr className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="border border-gray-300 px-3 py-3 text-center">1</td>
                   <td className="border border-gray-300 px-3 py-3 text-center">040201022<br />001</td>
                   <td className="border border-gray-300 px-3 py-3 text-center">路基工程</td>
@@ -396,7 +435,7 @@ export function InventoryStep({
                 </tr>
                 
                 {/* 第2行 - 施工便道 */}
-                <tr className="hover:bg-gray-50">
+                <tr className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="border border-gray-300 px-3 py-3 text-center">2</td>
                   <td className="border border-gray-300 px-3 py-3 text-center">040203007<br />005</td>
                   <td className="border border-gray-300 px-3 py-3 text-center">路基工程</td>
@@ -423,7 +462,7 @@ export function InventoryStep({
                 </tr>
                 
                 {/* 第3行 - 保通路 */}
-                <tr className="hover:bg-gray-50">
+                <tr className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="border border-gray-300 px-3 py-3 text-center">3</td>
                   <td className="border border-gray-300 px-3 py-3 text-center">040202015<br />005</td>
                   <td className="border border-gray-300 px-3 py-3 text-center">路基工程</td>
@@ -450,7 +489,7 @@ export function InventoryStep({
                 </tr>
                 
                 {/* 第4行 - 保通路水泥混凝土 */}
-                <tr className="hover:bg-gray-50">
+                <tr className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="border border-gray-300 px-3 py-3 text-center">4</td>
                   <td className="border border-gray-300 px-3 py-3 text-center">040203007<br />004</td>
                   <td className="border border-gray-300 px-3 py-3 text-center">路基工程</td>
@@ -478,14 +517,26 @@ export function InventoryStep({
               </tbody>
             </table>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        <Separator />
-
-        {/*  */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold">清单二：道路施工进度计划对应人员、机械配置（部分数据）</h3>
+      {/* 清单二卡片 */}
+      <Card className="shadow-lg border-0 bg-gradient-to-br from-white to-purple-50">
+        <CardHeader className="bg-gradient-to-r from-purple-50 to-violet-50 border-b border-purple-200">
+          <CardTitle className="flex items-center text-purple-800">
+            <Users className="w-5 h-5 mr-2" />
+            清单二：道路施工进度计划对应人员、机械配置
+          </CardTitle>
+          <CardDescription className="text-purple-700">
+            人员配置、机械使用和碳排放因子数据
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center space-x-2">
+              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+              <span className="text-sm text-purple-600 font-medium">包含人员生活碳排放和机械施工碳排放数据</span>
+            </div>
             <Button 
               onClick={() => {
                 const link = document.createElement('a')
@@ -497,13 +548,29 @@ export function InventoryStep({
               }}
               variant="outline"
               size="sm"
-              className="flex items-center gap-2"
+              className="flex items-center gap-2 bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100"
             >
-              <FileText className="w-4 h-4" />
+              <Download className="w-4 h-4" />
               下载完整表格
             </Button>
           </div>
-          <div className="overflow-x-auto">
+          
+          {/* 表格说明 */}
+          <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <Info className="w-5 h-5 text-purple-600 mt-0.5" />
+              <div className="text-sm text-purple-800">
+                <p className="font-medium mb-1">表格说明：</p>
+                <ul className="space-y-1 text-xs">
+                  <li>• 包含人员数量、生活碳排放因子、机械类型、柴油消耗、电力消耗等详细信息</li>
+                  <li>• 机械碳排放因子基于台班计算，人员碳排放基于工作日计算</li>
+                  <li>• 所有数据均来自实际项目案例，具有教学参考价值</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+          
+          <div className="overflow-x-auto border border-gray-200 rounded-lg shadow-sm">
             <table className="w-full border-collapse border border-gray-300 text-xs">
               <thead>
                 <tr className="bg-gray-100">
@@ -524,9 +591,8 @@ export function InventoryStep({
                 </tr>
               </thead>
               <tbody>
-                {/* 行数据将在这里重新添加 */}
                 {/* 第1行 - 管理人员和机械操作手 */}
-                <tr className="hover:bg-gray-50">
+                <tr className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="border border-gray-300 px-3 py-3 text-center" rowSpan={5}>1.1.1</td>
                   <td className="border border-gray-300 px-3 py-3 text-center" rowSpan={5}>路基工程</td>
                   <td className="border border-gray-300 px-3 py-3 text-center" rowSpan={5}></td>
@@ -552,7 +618,7 @@ export function InventoryStep({
                 </tr>
                 
                 {/* 第2行 - 挖机220 */}
-                <tr className="hover:bg-gray-50">
+                <tr className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="border border-gray-300 px-3 py-3 text-center">挖机一台 (型号220): 型号是220就是22吨级的斗容量在1.1立方左右。</td>
                   <td className="border border-gray-300 px-3 py-3 text-center">斗容量 1.25m3 履带式单斗挖掘机</td>
                   <td className="border border-gray-300 px-3 py-3 text-center font-mono">80.35</td>
@@ -572,7 +638,7 @@ export function InventoryStep({
                 </tr>
                 
                 {/* 第3行 - 挖机160 */}
-                <tr className="hover:bg-gray-50">
+                <tr className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="border border-gray-300 px-3 py-3 text-center">挖机一台 (型号160): 型号是160就是16吨级的斗容量在0.65立方左右。</td>
                   <td className="border border-gray-300 px-3 py-3 text-center">斗容量 0.6m3 履带式单斗挖掘机</td>
                   <td className="border border-gray-300 px-3 py-3 text-center font-mono">37.45</td>
@@ -592,7 +658,7 @@ export function InventoryStep({
                 </tr>
                 
                 {/* 第4行 - 装载机160 */}
-                <tr className="hover:bg-gray-50">
+                <tr className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="border border-gray-300 px-3 py-3 text-center">装载机一台 (型号160)</td>
                   <td className="border border-gray-300 px-3 py-3 text-center">斗容量 1.0m3 轮胎式装载机</td>
                   <td className="border border-gray-300 px-3 py-3 text-center font-mono">49.03</td>
@@ -612,7 +678,7 @@ export function InventoryStep({
                 </tr>
                 
                 {/* 第5行 - 后八轮十台 */}
-                <tr className="hover:bg-gray-50">
+                <tr className="hover:bg-gray-50 transition-colors duration-150">
                   <td className="border border-gray-300 px-3 py-3 text-center">后八轮十台 (30-36吨)</td>
                   <td className="border border-gray-300 px-3 py-3 text-center">装载质量30t以内自卸汽车</td>
                   <td className="border border-gray-300 px-3 py-3 text-center"></td>
@@ -627,26 +693,26 @@ export function InventoryStep({
             </table>
           </div>
           
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-            <p className="text-blue-800 text-sm">
+          <div className="bg-purple-50 border border-purple-200 rounded-lg p-4 mt-6">
+            <p className="text-purple-800 text-sm">
               <strong>说明：</strong>以上工程量清单为实验教学数据，基于真实项目案例整理。在实际项目中，工程量清单应根据设计图纸和现场勘察结果进行详细计算。
             </p>
           </div>
-        </div>
+        </CardContent>
+      </Card>
 
-        {/* 图片预览弹窗 */}
-        <Dialog open={showImage} onOpenChange={setShowImage}>
-          <DialogContent className="max-w-4xl">
-            <Image
-              src="/交通基础设施项目工程量清单备注.webp"
-              alt="工程量清单备注"
-              width={1200}
-              height={800}
-              className="w-full h-auto"
-            />
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+      {/* 图片预览弹窗 */}
+      <Dialog open={showImage} onOpenChange={setShowImage}>
+        <DialogContent className="max-w-4xl">
+          <Image
+            src="/交通基础设施项目工程量清单备注.webp"
+            alt="工程量清单备注"
+            width={1200}
+            height={800}
+            className="w-full h-auto"
+          />
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 } 

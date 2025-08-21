@@ -50,11 +50,11 @@ export function HeroBanner() {
     startTimer()
   }
 
-  const handleScrollToCategories = (e: React.MouseEvent<HTMLAnchorElement>) => {
+  const handleScrollToCourses = (e: React.MouseEvent<HTMLAnchorElement>) => {
     e.preventDefault()
-    const categoriesElement = document.getElementById('categories')
-    if (categoriesElement) {
-      categoriesElement.scrollIntoView({
+    const coursesElement = document.getElementById('courses')
+    if (coursesElement) {
+      coursesElement.scrollIntoView({
         behavior: 'smooth',
         block: 'start'
       })
@@ -106,8 +106,8 @@ export function HeroBanner() {
 
         <div className="flex flex-wrap gap-4 justify-center mt-8">
           <a
-            href="#categories"
-            onClick={handleScrollToCategories}
+            href="#courses"
+            onClick={handleScrollToCourses}
             className="inline-block bg-white text-indigo-600 font-medium px-6 py-3 rounded-lg shadow-md hover:bg-gray-50 transition duration-300 transform hover:scale-105"
           >
             <i className="fas fa-play-circle mr-2"></i>开始探索

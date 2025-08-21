@@ -70,12 +70,6 @@ export default function HomeHeader() {
               关于平台
             </a>
             <a
-              href="#categories"
-              className="px-3 py-2 rounded-md text-base font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
-            >
-              四大模块
-            </a>
-            <a
               href="#courses"
               className="px-3 py-2 rounded-md text-base font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
             >
@@ -155,12 +149,6 @@ export default function HomeHeader() {
             className="block px-3 py-2 rounded-md text-lg font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
           >
             关于平台
-          </a>
-          <a
-            href="#categories"
-            className="block px-3 py-2 rounded-md text-lg font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
-          >
-            四大模块
           </a>
           <a
             href="#courses"
