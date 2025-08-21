@@ -147,7 +147,7 @@ export const courses: Course[] = [
   {
     id: "carbon-accounting-management",
     title: "碳核算与碳管理",
-    description: "系统学习碳核算方法，掌握企业碳管理体系的构建与实施。",
+    description: "系统学习碳核算方法，掌握企业碳管理体系的构建与实施。目前第5章\"碳足迹计量\"已完成编写，作为样章供大家预览学习。其他章节正在编写中。",
     difficulty: "intermediate",
     status: "published",
     icon: "calculator",

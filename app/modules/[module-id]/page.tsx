@@ -83,6 +83,57 @@ export default function ModulePage() {
               </div>
             </div>
           </div>
+
+          {/* 碳核算与碳管理模块特殊介绍 */}
+          {module.id === "carbon-calculate" && (
+            <div className="mt-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+              <div className="text-center mb-6">
+                <h2 className="text-2xl font-bold text-green-800 mb-2">📖 样章预览</h2>
+                <p className="text-green-700">碳核算与碳管理模块样章内容展示</p>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="bg-white p-6 rounded-lg border border-green-200">
+                  <div className="flex items-center mb-4">
+                    <div className="w-10 h-10 bg-green-600 rounded-lg flex items-center justify-center mr-3">
+                      <i className="fas fa-book text-white"></i>
+                    </div>
+                    <h3 className="text-lg font-semibold text-green-800">第5章 碳足迹计量</h3>
+                  </div>
+                  <p className="text-green-700 text-sm mb-4">
+                    本章是教材的样章内容，完整展示了碳足迹计量的标准、方法和实践应用。
+                    其他章节正在编写中，敬请期待。
+                  </p>
+                  <div className="space-y-2 text-xs text-green-600">
+                    <div>• 5.1 碳足迹计量标准</div>
+                    <div>• 5.2 生命周期评价方法与碳足迹</div>
+                    <div>• 5.3 碳足迹计算与数据质量</div>
+                  </div>
+                </div>
+                <div className="bg-white p-6 rounded-lg border border-green-200">
+                  <div className="flex items-center mb-4">
+                    <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center mr-3">
+                      <i className="fas fa-info-circle text-white"></i>
+                    </div>
+                    <h3 className="text-lg font-semibold text-blue-800">编写进度</h3>
+                  </div>
+                  <ul className="space-y-2 text-sm text-blue-700">
+                    <li className="flex items-start">
+                      <i className="fas fa-check-circle text-blue-500 mt-1 mr-2"></i>
+                      <span>第5章已完成，作为样章供预览</span>
+                    </li>
+                    <li className="flex items-start">
+                      <i className="fas fa-clock text-blue-500 mt-1 mr-2"></i>
+                      <span>其他章节正在编写中</span>
+                    </li>
+                    <li className="flex items-start">
+                      <i className="fas fa-star text-blue-500 mt-1 mr-2"></i>
+                      <span>样章内容完整，可正常学习使用</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+          )}
         </section>
 
         {/* 主要内容 */}

@@ -139,7 +139,45 @@ export default function CourseDetail({ params }: { params: { "course-id": string
         <div className="text-center py-10">课程不存在或加载失败</div>
       )}
 
-      {course && <CourseContent courseId={courseId} />}
+      {course && (
+        <div className="mb-8">
+          {/* 课程特色介绍 */}
+          {course.id === "carbon-accounting-management" && (
+            <div className="mb-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-200">
+              <div className="flex items-start space-x-4">
+                <div className="flex-shrink-0">
+                  <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
+                    <i className="fas fa-eye text-white text-xl"></i>
+                  </div>
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-xl font-bold text-green-800 mb-2">样章说明</h3>
+                  <p className="text-green-700 mb-4">
+                    本课程正在编写中，目前第5章"碳足迹计量"已完成，作为样章供大家预览学习。
+                    其他章节正在编写中，敬请期待完整版教材的发布。
+                  </p>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="bg-white p-3 rounded-lg border border-green-200">
+                      <h4 className="font-semibold text-green-800 text-sm mb-1">📊 碳核算标准</h4>
+                      <p className="text-green-600 text-xs">掌握国际国内主要碳核算标准</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-green-200">
+                      <h4 className="font-semibold text-green-800 text-sm mb-1">🌱 样章内容</h4>
+                      <p className="text-green-600 text-xs">第5章碳足迹计量完整内容</p>
+                    </div>
+                    <div className="bg-white p-3 rounded-lg border border-green-200">
+                      <h4 className="font-semibold text-green-800 text-sm mb-1">🔬 LCA方法</h4>
+                      <p className="text-green-600 text-xs">生命周期评价方法应用</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <CourseContent courseId={courseId} />
+        </div>
+      )}
     </div>
   );
 }

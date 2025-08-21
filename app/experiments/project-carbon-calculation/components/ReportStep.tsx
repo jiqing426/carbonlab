@@ -1,7 +1,7 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
-import { BarChart3, Download, ArrowLeft, CheckCircle } from "lucide-react"
+import { BarChart3, Download, ArrowLeft, CheckCircle, Building2, Calculator } from "lucide-react"
 import { CalculationResults, ExperimentStep } from "./types"
 import { PieChart, Pie, Cell, ResponsiveContainer, Legend, Tooltip, BarChart, CartesianGrid, XAxis, YAxis, Bar, LineChart, Line } from "recharts"
 import { useRef, useState } from "react"
@@ -100,343 +100,339 @@ export function ReportStep({
     },
     {
       name: "范围三",
-      value: calculationResults.scope3, 
+      value: calculationResults.scope3,
       description: "其他间接排放",
-      color: "#3b82f6"
+      color: "#10b981"
     }
-  ].filter(item => item.value > 0) // 过滤掉值为0的项
+  ]
 
-  // 自定义饼图标签
-  const renderCustomLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }: any) => {
-    if (percent < 0.05) return null // 小于5%不显示标签
-    const RADIAN = Math.PI / 180
-    const radius = innerRadius + (outerRadius - innerRadius) * 0.5
-    const x = cx + radius * Math.cos(-midAngle * RADIAN)
-    const y = cy + radius * Math.sin(-midAngle * RADIAN)
+  // 准备柱状图数据
+  const categoryData = [
+    { name: "材料生产", value: calculationResults.materials, color: "#8b5cf6" },
+    { name: "材料运输", value: calculationResults.transport, color: "#06b6d4" },
+    { name: "施工建设", value: calculationResults.construction, color: "#f59e0b" },
+    { name: "竣工交付", value: calculationResults.completion, color: "#ef4444" },
+    { name: "碳汇减碳", value: -calculationResults.carbonSink, color: "#10b981" }
+  ]
 
-    return (
-      <text 
-        x={x} 
-        y={y} 
-        fill="white" 
-        textAnchor={x > cx ? 'start' : 'end'} 
-        dominantBaseline="central"
-        fontSize="12"
-        fontWeight="bold"
-      >
-        {`${(percent * 100).toFixed(0)}%`}
-      </text>
-    )
-  }
+  // 准备折线图数据
+  const timelineData = [
+    { stage: "材料生产", emissions: calculationResults.materials },
+    { stage: "材料运输", emissions: calculationResults.transport },
+    { stage: "施工建设", emissions: calculationResults.construction },
+    { stage: "竣工交付", emissions: calculationResults.completion },
+    { stage: "碳汇减碳", emissions: -calculationResults.carbonSink },
+    { stage: "总计", emissions: calculationResults.total }
+  ]
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <BarChart3 className="w-5 h-5 mr-2" />
-          实验报告
-        </CardTitle>
-        <CardDescription>
-          查看完整的碳核算分析报告和减排建议
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-6" ref={reportRef}>
-        {/* 项目概况 */}
-        <div>
-          <h3 className="text-lg font-semibold mb-3">项目概况</h3>
-          <div className="p-4 bg-gray-50 rounded-lg">
-            <p><strong>项目名称</strong>：{projectName || "未填写"}</p>
-            <p><strong>项目描述</strong>：{projectDescription || "未填写"}</p>
-            <p><strong>核算日期</strong>：{new Date().toLocaleDateString()}</p>
+    <div className="space-y-6">
+      {/* 页面标题区域 */}
+      <div className="text-center space-y-4 bg-gradient-to-r from-emerald-50 to-teal-50 p-8 rounded-2xl border border-emerald-200">
+        <div className="flex items-center justify-center space-x-3">
+          <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center">
+            <BarChart3 className="w-6 h-6 text-white" />
+          </div>
+          <h2 className="text-3xl font-bold text-gray-800">实验报告</h2>
+        </div>
+        <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+          查看碳核算结果和分析，生成完整的实验报告
+        </p>
+      </div>
+
+      {/* 报告内容 */}
+      <div ref={reportRef} className="bg-white rounded-2xl shadow-xl border-0 overflow-hidden">
+        {/* 报告头部 */}
+        <div className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white p-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold mb-4">项目碳精算实验报告</h1>
+            <div className="flex items-center justify-center space-x-4 text-emerald-100">
+              <div className="flex items-center space-x-2">
+                <CheckCircle className="w-5 h-5" />
+                <span>实验完成</span>
+              </div>
+              <div className="w-1 h-1 bg-emerald-300 rounded-full"></div>
+              <span>生成时间：{new Date().toLocaleDateString('zh-CN')}</span>
+            </div>
           </div>
         </div>
 
-        {/* 碳排放结果分析 */}
-        <div>
-          <h3 className="text-lg font-semibold mb-3">碳排放结果分析</h3>
-          
-          {/* 排放范围饼图 */}
-          <div className="mb-6">
-            <h4 className="font-medium mb-3">排放范围分布</h4>
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* 饼图 */}
-              <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
-                  <PieChart>
-                    <Pie
-                      data={scopeData}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={renderCustomLabel}
-                      outerRadius={100}
-                      fill="#8884d8"
-                      dataKey="value"
-                    >
-                      {scopeData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
-                      ))}
-                    </Pie>
-                    <Tooltip 
-                      formatter={(value: number) => [`${value} kg CO₂e`, ""]}
-                      labelFormatter={(label) => {
-                        const item = scopeData.find(d => d.name === label)
-                        return `${label} (${item?.description})`
-                      }}
-                    />
-                    <Legend 
-                      formatter={(value) => {
-                        const item = scopeData.find(d => d.name === value)
-                        return `${value} - ${item?.description}`
-                      }}
-                    />
-                  </PieChart>
-                </ResponsiveContainer>
+        {/* 项目信息 */}
+        <div className="p-8 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+            <div className="w-8 h-8 bg-emerald-100 rounded-lg flex items-center justify-center mr-3">
+              <Building2 className="w-4 h-4 text-emerald-600" />
+            </div>
+            项目基本信息
+          </h2>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                <span className="font-semibold text-gray-700">项目名称：</span>
+                <span className="text-gray-900">{projectName}</span>
               </div>
-              
-              {/* 数据统计 */}
-              <div className="space-y-4">
-                <div className="space-y-3">
-                  {scopeData.map((item) => (
-                    <div key={item.name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="flex items-center space-x-3">
-                        <div 
-                          className="w-4 h-4 rounded-full" 
-                          style={{ backgroundColor: item.color }}
-                        ></div>
-                        <div>
-                          <div className="font-medium">{item.name}</div>
-                          <div className="text-sm text-gray-600">{item.description}</div>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="font-bold">{item.value} kg CO₂e</div>
-                        <div className="text-sm text-gray-600">
-                          {((item.value / calculationResults.total) * 100).toFixed(1)}%
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-                
-                {/* 总计 */}
-                <div className="border-t pt-3">
-                  <div className="flex justify-between items-center font-bold">
-                    <span>总计</span>
-                    <span>{calculationResults.total} kg CO₂e</span>
-                  </div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-start space-x-3">
+                <div className="w-2 h-2 bg-emerald-500 rounded-full mt-2"></div>
+          <div>
+                  <span className="font-semibold text-gray-700">项目描述：</span>
+                  <p className="text-gray-900 mt-1 text-sm leading-relaxed">{projectDescription}</p>
                 </div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* 各类别排放量和排放结构分析 */}
-          <div className="mb-8">
-            <h3 className="text-md font-medium mb-4">各类别排放量和排放结构分析</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              {/* 饼图 */}
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h4 className="text-md font-medium mb-3 text-gray-700">排放结构分布</h4>
-                <div className="h-[300px]">
+        {/* 碳排放汇总 */}
+        <div className="p-8 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+            <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center mr-3">
+              <Calculator className="w-4 h-4 text-blue-600" />
+            </div>
+            碳排放汇总
+          </h2>
+          
+          {/* 总排放量卡片 */}
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-6 rounded-xl border border-blue-200 mb-6">
+            <div className="text-center">
+              <div className="text-4xl font-bold text-blue-600 mb-2">
+                {(calculationResults.total / 1000).toFixed(2)} 吨 CO₂e
+              </div>
+              <p className="text-blue-700">项目总碳排放量</p>
+            </div>
+          </div>
+
+          {/* 分类排放量 */}
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-purple-600 mb-1">
+                  {(calculationResults.materials / 1000).toFixed(2)}
+                </div>
+                <p className="text-sm text-gray-600">材料生产</p>
+                <p className="text-xs text-gray-500">吨 CO₂e</p>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-cyan-600 mb-1">
+                  {(calculationResults.transport / 1000).toFixed(2)}
+                </div>
+                <p className="text-sm text-gray-600">材料运输</p>
+                <p className="text-xs text-gray-500">吨 CO₂e</p>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-orange-600 mb-1">
+                  {(calculationResults.construction / 1000).toFixed(2)}
+                </div>
+                <p className="text-sm text-gray-600">施工建设</p>
+                <p className="text-xs text-gray-500">吨 CO₂e</p>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-red-600 mb-1">
+                  {(calculationResults.completion / 1000).toFixed(2)}
+                </div>
+                <p className="text-sm text-gray-600">竣工交付</p>
+                <p className="text-xs text-gray-500">吨 CO₂e</p>
+              </div>
+            </div>
+            <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-600 mb-1">
+                  {(-calculationResults.carbonSink / 1000).toFixed(2)}
+                </div>
+                <p className="text-sm text-gray-600">碳汇减碳</p>
+                <p className="text-xs text-gray-500">吨 CO₂e</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* 数据可视化 */}
+        <div className="p-8 border-b border-gray-200">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+            <div className="w-8 h-8 bg-purple-100 rounded-lg flex items-center justify-center mr-3">
+              <BarChart3 className="w-4 h-4 text-purple-600" />
+            </div>
+            数据可视化分析
+          </h2>
+          
+          <div className="grid lg:grid-cols-2 gap-8">
+            {/* 排放范围饼图 */}
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">排放范围分布</h3>
+              <div className="h-64">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={[
-                          { name: "材料生产", value: Math.abs(calculationResults.materials), color: "#0ea5e9" },
-                          { name: "材料运输", value: Math.abs(calculationResults.transport), color: "#b45309" },
-                          { name: "施工建设", value: Math.abs(calculationResults.construction), color: "#ea580c" },
-                          { name: "竣工交付", value: Math.abs(calculationResults.completion), color: "#9333ea" }
-                        ]}
+                        data={scopeData}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        label={({ name, percent }) => `${name} ${(percent * 100).toFixed(1)}%`}
-                        outerRadius={100}
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={80}
                         fill="#8884d8"
                         dataKey="value"
                       >
-                        {[
-                          { name: "材料生产", value: Math.abs(calculationResults.materials), color: "#0ea5e9" },
-                          { name: "材料运输", value: Math.abs(calculationResults.transport), color: "#b45309" },
-                          { name: "施工建设", value: Math.abs(calculationResults.construction), color: "#ea580c" },
-                          { name: "竣工交付", value: Math.abs(calculationResults.completion), color: "#9333ea" }
-                        ].map((entry, index) => (
+                        {scopeData.map((entry, index) => (
                           <Cell key={`cell-${index}`} fill={entry.color} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => `${value} kg CO₂e`} />
+                    <Tooltip formatter={(value) => `${(Number(value) / 1000).toFixed(2)} 吨 CO₂e`} />
+                    <Legend />
                     </PieChart>
                   </ResponsiveContainer>
-                </div>
+              </div>
+            </div>
+
+            {/* 分类排放柱状图 */}
+            <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+              <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">分类排放对比</h3>
+              <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={categoryData}>
+                    <CartesianGrid strokeDasharray="3 3" />
+                    <XAxis dataKey="name" />
+                    <YAxis />
+                    <Tooltip formatter={(value) => `${(Number(value) / 1000).toFixed(2)} 吨 CO₂e`} />
+                    <Bar dataKey="value" fill="#8884d8">
+                      {categoryData.map((entry, index) => (
+                            <Cell key={`cell-${index}`} fill={entry.color} />
+                          ))}
+                    </Bar>
+                  </BarChart>
+                    </ResponsiveContainer>
+              </div>
                   </div>
+                    </div>
 
-              {/* 分栏展示图 */}
-              <div className="bg-white p-4 rounded-lg shadow">
-                <h4 className="text-md font-medium mb-3 text-gray-700">排放量分布</h4>
-                <div className="h-[300px]">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <LineChart
-                      data={[
-                        { name: "材料生产", value: Math.abs(calculationResults.materials), color: "#0ea5e9" },
-                        { name: "材料运输", value: Math.abs(calculationResults.transport), color: "#b45309" },
-                        { name: "施工建设", value: Math.abs(calculationResults.construction), color: "#ea580c" },
-                        { name: "竣工交付", value: Math.abs(calculationResults.completion), color: "#9333ea" }
-                      ]}
-                      margin={{ top: 20, right: 30, left: 20, bottom: 5 }}
-                    >
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" />
-                      <YAxis />
-                      <Tooltip 
-                        formatter={(value) => [`${value} kg CO₂e`, ""]}
-                        labelFormatter={(label) => label}
-                        separator=""
-                      />
-                      <Line 
-                        type="monotone" 
-                        dataKey="value" 
-                        stroke="#8884d8"
-                        strokeWidth={2}
-                        dot={{ fill: "#8884d8", strokeWidth: 2 }}
-                        activeDot={{ r: 8, fill: "#8884d8" }}
-                      >
-                        {[
-                          { name: "材料生产", value: Math.abs(calculationResults.materials), color: "#0ea5e9" },
-                          { name: "材料运输", value: Math.abs(calculationResults.transport), color: "#b45309" },
-                          { name: "施工建设", value: Math.abs(calculationResults.construction), color: "#ea580c" },
-                          { name: "竣工交付", value: Math.abs(calculationResults.completion), color: "#9333ea" }
-                        ].map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Line>
-                    </LineChart>
-                  </ResponsiveContainer>
+          {/* 排放趋势折线图 */}
+          <div className="mt-8 bg-white p-6 rounded-xl border border-gray-200 shadow-sm">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4 text-center">排放趋势分析</h3>
+            <div className="h-64">
+                    <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={timelineData}>
+                        <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis dataKey="stage" />
+                        <YAxis />
+                  <Tooltip formatter={(value) => `${(Number(value) / 1000).toFixed(2)} 吨 CO₂e`} />
+                        <Line 
+                          type="monotone" 
+                    dataKey="emissions" 
+                          stroke="#8884d8"
+                    strokeWidth={3}
+                    dot={{ fill: '#8884d8', strokeWidth: 2, r: 6 }}
+                  />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              </div>
+
+        {/* 结论与建议 */}
+        <div className="p-8">
+          <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+            <div className="w-8 h-8 bg-orange-100 rounded-lg flex items-center justify-center mr-3">
+              <CheckCircle className="w-4 h-4 text-orange-600" />
+            </div>
+            结论与建议
+          </h2>
+          
+          <div className="space-y-4">
+            <div className="bg-orange-50 border border-orange-200 rounded-lg p-4">
+              <h4 className="font-semibold text-orange-800 mb-2">主要发现</h4>
+              <ul className="text-orange-700 space-y-1 text-sm">
+                <li>• 项目总碳排放量为 {(calculationResults.total / 1000).toFixed(2)} 吨 CO₂e</li>
+                <li>• 材料生产阶段是主要排放源，占比 {((calculationResults.materials / calculationResults.total) * 100).toFixed(1)}%</li>
+                <li>• 碳汇减碳量为 {(calculationResults.carbonSink / 1000).toFixed(2)} 吨 CO₂e</li>
+                  </ul>
+            </div>
+
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <h4 className="font-semibold text-blue-800 mb-2">优化建议</h4>
+              <ul className="text-blue-700 space-y-1 text-sm">
+                <li>• 优先选择低碳材料，降低材料生产阶段的碳排放</li>
+                <li>• 优化运输路线，减少材料运输距离</li>
+                <li>• 采用节能施工设备，提高施工效率</li>
+                <li>• 增加绿化面积，提升碳汇减碳效果</li>
+                  </ul>
                 </div>
               </div>
             </div>
           </div>
-        </div>
 
-        {/* 减排建议 */}
-        <div>
-          <h3 className="text-lg font-semibold mb-3">减排建议</h3>
+          {/* 操作按钮 */}
+      <div className="flex justify-between items-center">
+        <Button
+          onClick={handlePrevious}
+          variant="outline"
+          className="flex items-center space-x-2 px-6 py-3"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>上一步</span>
+        </Button>
+        
+        <div className="flex space-x-4">
+          <Button
+            onClick={handleDownloadPDF}
+            className="flex items-center space-x-2 px-6 py-3 bg-emerald-600 hover:bg-emerald-700"
+          >
+            <Download className="w-4 h-4" />
+            <span>下载PDF报告</span>
+            </Button>
           
-          {/* 按排放范围的减排建议 */}
-          <div className="mb-6">
-            <h4 className="font-medium mb-3">按排放范围的减排策略</h4>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
-              <div className="p-4 border-l-4 border-red-500 bg-red-50 rounded-lg">
-                <h5 className="font-medium mb-2 text-red-700">范围一减排 (直接排放)</h5>
-                <ul className="text-sm space-y-1 text-gray-700">
-                  <li>• 使用新能源施工设备</li>
-                  <li>• 提高燃料使用效率</li>
-                  <li>• 定期维护设备，减少排放</li>
-                  <li>• 优化施工工艺流程</li>
-                </ul>
-              </div>
-              <div className="p-4 border-l-4 border-yellow-500 bg-yellow-50 rounded-lg">
-                <h5 className="font-medium mb-2 text-yellow-700">范围二减排 (间接排放-电力)</h5>
-                <ul className="text-sm space-y-1 text-gray-700">
-                  <li>• 采购绿色电力</li>
-                  <li>• 安装太阳能发电设备</li>
-                  <li>• 提高用电设备能效</li>
-                  <li>• 实施智能用电管理</li>
-                </ul>
-              </div>
-              <div className="p-4 border-l-4 border-blue-500 bg-blue-50 rounded-lg">
-                <h5 className="font-medium mb-2 text-blue-700">范围三减排 (其他间接排放)</h5>
-                <ul className="text-sm space-y-1 text-gray-700">
-                  <li>• 选择低碳建材供应商</li>
-                  <li>• 优化供应链运输</li>
-                  <li>• 推广绿色出行方式</li>
-                  <li>• 加强废料回收利用</li>
-                </ul>
-              </div>
-            </div>
+          <Button
+            onClick={() => setIsCompleteDialogOpen(true)}
+            className="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700"
+          >
+            <CheckCircle className="w-4 h-4" />
+            <span>完成实验</span>
+            </Button>
+        </div>
           </div>
 
-          {/* 具体措施建议 */}
-          <div>
-            <h4 className="font-medium mb-3">具体实施措施</h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-medium mb-2">材料优化</h4>
-                <ul className="text-sm space-y-1 text-gray-600">
-                  <li>• 选择低碳水泥和混凝土</li>
-                  <li>• 提高钢材回收利用率</li>
-                  <li>• 使用再生骨料替代天然骨料</li>
-                </ul>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-medium mb-2">施工优化</h4>
-                <ul className="text-sm space-y-1 text-gray-600">
-                  <li>• 优化施工工艺，提高效率</li>
-                  <li>• 使用新能源施工设备</li>
-                  <li>• 合理安排施工计划，减少怠速</li>
-                </ul>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-medium mb-2">能源管理</h4>
-                <ul className="text-sm space-y-1 text-gray-600">
-                  <li>• 使用清洁能源供电</li>
-                  <li>• 提高设备能效水平</li>
-                  <li>• 实施能源监测管理</li>
-                </ul>
-              </div>
-              <div className="p-4 border rounded-lg">
-                <h4 className="font-medium mb-2">运输优化</h4>
-                <ul className="text-sm space-y-1 text-gray-600">
-                  <li>• 就近采购材料，减少运输距离</li>
-                  <li>• 优化运输路线和装载率</li>
-                  <li>• 推广新能源运输车辆</li>
-                </ul>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* 操作按钮 */}
-        <div className="flex justify-center space-x-4">
-          <Button variant="outline" onClick={handlePrevious}>
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            返回上一步
-          </Button>
-          <Button onClick={() => setIsCompleteDialogOpen(true)} className="bg-purple-600 hover:bg-purple-700">
-            <CheckCircle className="w-4 h-4 mr-2" />
-            完成实验
-          </Button>
-        </div>
-
-        <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
-          <DialogContent className="max-w-md">
-            <DialogHeader>
-              <DialogTitle>🎉 恭喜完成实验！</DialogTitle>
-            </DialogHeader>
-            <div className="text-center text-lg font-medium my-4">您已顺利完成交通基础设施碳核算实验。</div>
-            <DialogFooter className="flex flex-col gap-2">
-              <Button 
-                onClick={() => { 
-                  setIsCompleteDialogOpen(false)
-                  handleDownloadPDF()
-                }} 
-                className="w-full bg-blue-600 hover:bg-blue-700"
-              >
-                <Download className="mr-2 h-4 w-4" />
-                下载实验报告
-              </Button>
-              <Button 
-                onClick={() => { 
-                  setIsCompleteDialogOpen(false)
-                  window.location.href = "/"
-                }} 
-                variant="outline" 
-                className="w-full"
-              >
-                返回首页
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </CardContent>
-    </Card>
+      {/* 完成实验确认对话框 */}
+      <Dialog open={isCompleteDialogOpen} onOpenChange={setIsCompleteDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center space-x-2">
+              <CheckCircle className="w-5 h-5 text-green-600" />
+              <span>实验完成</span>
+            </DialogTitle>
+            <DialogDescription>
+              恭喜您完成了项目碳精算实验！您已经成功掌握了碳核算的基本方法和流程。
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="flex space-x-3">
+            <Button 
+              onClick={() => {
+                setIsCompleteDialogOpen(false)
+                window.location.href = "/"
+              }} 
+              variant="outline"
+              className="flex-1"
+            >
+              返回主页
+            </Button>
+            <Button 
+              onClick={() => {
+                setIsCompleteDialogOpen(false)
+                handleDownloadPDF()
+              }} 
+              className="flex-1 bg-emerald-600 hover:bg-emerald-700"
+            >
+              <Download className="w-4 h-4 mr-2" />
+              下载报告
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   )
 } 
