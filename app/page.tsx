@@ -13,6 +13,7 @@ import { BookOpen, FileText, BarChart3, Globe, ArrowRight, ChevronLeft, ChevronR
 import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ChevronUp } from "lucide-react"
+import { ExperimentLink, FeatureLink } from "@/components/ui/feature-link"
 
 // 获取模块背景样式
 const getModuleBgClass = (module: string) => {
@@ -405,13 +406,26 @@ export default function Home() {
                     </div>
                   </div>
                   <p className="text-gray-600 mb-4">{experiment.description}</p>
-                  <Link
-                    href={experiment.route || '#'}
-                    className={`inline-block ${getModuleButtonClass(experiment.module)} text-white font-medium px-4 py-2 rounded-lg transition duration-300 transform hover:scale-105`}
-                  >
-                    <BookOpen className="h-4 w-4 inline-block mr-2" />
-                    开始实验
-                  </Link>
+                  {experiment.status === "已上线" ? (
+                    // 已上线的实验使用普通Link
+                    <Link
+                      href={experiment.route || '#'}
+                      className={`inline-block ${getModuleButtonClass(experiment.module)} text-white font-medium px-4 py-2 rounded-lg transition duration-300 transform hover:scale-105`}
+                    >
+                      <BookOpen className="h-4 w-4 inline-block mr-2" />
+                      开始实验
+                    </Link>
+                  ) : (
+                    // 未上线的实验使用ExperimentLink显示弹框
+                    <ExperimentLink
+                      href={experiment.route || '#'}
+                      experimentName={experiment.title}
+                      className={`inline-block ${getModuleButtonClass(experiment.module)} text-white font-medium px-4 py-2 rounded-lg transition duration-300 transform hover:scale-105`}
+                    >
+                      <BookOpen className="h-4 w-4 inline-block mr-2" />
+                      开始实验
+                    </ExperimentLink>
+                  )}
                 </div>
               </div>
             ))}
@@ -434,7 +448,12 @@ export default function Home() {
             <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6 flex flex-col lg:h-[400px] lg:overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-lg">最新政策</h3>
-                <Link href="/news" className="text-blue-600 text-sm hover:underline">更多</Link>
+                <Link 
+                  href="/news" 
+                  className="text-blue-600 text-sm hover:underline"
+                >
+                  更多
+                </Link>
               </div>
               <ul className="space-y-4">
                 {latestPolicies.map((item, idx) => (
@@ -451,7 +470,12 @@ export default function Home() {
               </ul>
               <div className="flex justify-between items-center mt-8 mb-4">
                 <h3 className="font-bold text-lg">热点新闻</h3>
-                <Link href="/news" className="text-blue-600 text-sm hover:underline">更多</Link>
+                <Link 
+                  href="/news" 
+                  className="text-blue-600 text-sm hover:underline"
+                >
+                  更多
+                </Link>
               </div>
               <ul className="space-y-3">
                 {hotNews.map((item, idx) => (
@@ -493,7 +517,10 @@ export default function Home() {
                   ))}
                 </div>
                 <div className="mt-6 flex justify-center">
-                  <Link href="/reports">
+                  <Link 
+                    href="/reports" 
+                    className="text-green-600 text-sm hover:underline"
+                  >
                     <Button variant="outline" className="border-green-500 text-green-600 rounded-full text-sm hover:bg-green-500 hover:text-white transition-colors px-4 py-2">
                       查看更多报告
                     </Button>
@@ -504,7 +531,12 @@ export default function Home() {
               <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-bold text-lg">数据洞察</h3>
-                  <Link href="/datasets" className="text-green-600 text-sm hover:underline">更多</Link>
+                  <Link 
+                    href="/datasets" 
+                    className="text-green-600 text-sm hover:underline"
+                  >
+                    更多
+                  </Link>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                   {dataCards.map((card, idx) => {
