@@ -1,8 +1,11 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { useError } from "@/contexts/error-context";
+import { useUserStore } from "@/lib/stores/user-store";
+import { useRouter } from "next/navigation";
+import { LoginRequiredModal } from "@/components/ui/login-required-modal";
 
 interface FeatureLinkProps {
   href: string;
@@ -67,38 +70,40 @@ export function ExperimentLink({
   className?: string;
   experimentName: string;
 }) {
+  const { isLoggedIn } = useUserStore();
+  const router = useRouter();
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+  const handleClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (!isLoggedIn) {
+      setShowLoginModal(true);
+      return;
+    }
+
+    // 已登录，跳转到实验页面
+    router.push(href);
+  };
+
   return (
-    <FeatureLink 
-      href={href} 
-      className={className} 
-      featureName={experimentName}
-      isAvailable={false}
-    >
-      {children}
-    </FeatureLink>
+    <>
+      <a
+        href={href}
+        className={className}
+        onClick={handleClick}
+      >
+        {children}
+      </a>
+      
+      <LoginRequiredModal
+        isOpen={showLoginModal}
+        onClose={() => setShowLoginModal(false)}
+        featureName={experimentName}
+      />
+    </>
   );
 }
 
-// 用于课程链接的专用组件
-export function CourseLink({ 
-  href, 
-  children, 
-  className = "", 
-  courseName 
-}: {
-  href: string;
-  children: React.ReactNode;
-  className?: string;
-  courseName: string;
-}) {
-  return (
-    <FeatureLink 
-      href={href} 
-      className={className} 
-      featureName={courseName}
-      isAvailable={false}
-    >
-      {children}
-    </FeatureLink>
-  );
-} 
+// 课程链接现在不需要登录拦截，使用普通的Link组件即可
+// 如果需要添加登录拦截，可以重新实现这个组件 

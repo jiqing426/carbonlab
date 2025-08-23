@@ -406,26 +406,15 @@ export default function Home() {
                     </div>
                   </div>
                   <p className="text-gray-600 mb-4">{experiment.description}</p>
-                  {experiment.status === "已上线" ? (
-                    // 已上线的实验使用普通Link
-                    <Link
-                      href={experiment.route || '#'}
-                      className={`inline-block ${getModuleButtonClass(experiment.module)} text-white font-medium px-4 py-2 rounded-lg transition duration-300 transform hover:scale-105`}
-                    >
-                      <BookOpen className="h-4 w-4 inline-block mr-2" />
-                      开始实验
-                    </Link>
-                  ) : (
-                    // 未上线的实验使用ExperimentLink显示弹框
-                    <ExperimentLink
-                      href={experiment.route || '#'}
-                      experimentName={experiment.title}
-                      className={`inline-block ${getModuleButtonClass(experiment.module)} text-white font-medium px-4 py-2 rounded-lg transition duration-300 transform hover:scale-105`}
-                    >
-                      <BookOpen className="h-4 w-4 inline-block mr-2" />
-                      开始实验
-                    </ExperimentLink>
-                  )}
+                  {/* 所有实验都需要登录才能访问 */}
+                  <ExperimentLink
+                    href={experiment.route || '#'}
+                    experimentName={experiment.title}
+                    className={`inline-block ${getModuleButtonClass(experiment.module)} text-white font-medium px-4 py-2 rounded-lg transition duration-300 transform hover:scale-105`}
+                  >
+                    <BookOpen className="h-4 w-4 inline-block mr-2" />
+                    开始实验
+                  </ExperimentLink>
                 </div>
               </div>
             ))}

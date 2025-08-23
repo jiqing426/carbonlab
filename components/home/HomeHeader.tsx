@@ -2,13 +2,29 @@
 
 import { useEffect, useState } from "react"
 import { Input } from "@/components/ui/input"
-import { Search } from "lucide-react"
+import { Search, User, Settings, LogOut, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { useUserStore } from "@/lib/stores/user-store"
+import { toast } from "sonner"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 export default function HomeHeader() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
+  const { isLoggedIn, user, logout } = useUserStore()
+
+  const handleLogout = () => {
+    logout()
+    toast.success('已退出登录')
+    router.push('/')
+  }
 
   useEffect(() => {
     const mobileMenuButton = document.getElementById("mobile-menu-button")
@@ -98,7 +114,7 @@ export default function HomeHeader() {
                 <Input
                   type="search"
                   placeholder="搜索课程、实验..."
-                  className="w-[200px] pl-9"
+                  className="w-[160px] pl-9 text-sm"
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
@@ -106,11 +122,68 @@ export default function HomeHeader() {
               </div>
               <Button 
                 type="submit"
-                className="h-10 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+                className="h-10 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm"
               >
                 搜索
               </Button>
             </form>
+            
+            {/* 用户登录按钮 */}
+            <div className="flex items-center space-x-2 ml-4">
+              {isLoggedIn ? (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      className="bg-green-600 hover:bg-green-700 text-white font-medium text-base flex items-center gap-2"
+                    >
+                      <div className="w-6 h-6 rounded-full overflow-hidden border border-white">
+                        {user?.avatar ? (
+                          <img 
+                            src={user.avatar} 
+                            alt="用户头像" 
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-white/20 flex items-center justify-center">
+                            <User className="h-4 w-4 text-white" />
+                          </div>
+                        )}
+                      </div>
+                      我的
+                      <ChevronDown className="h-4 w-4 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-48">
+                    <DropdownMenuItem
+                      onClick={() => router.push("/dashboard/home")}
+                      className="cursor-pointer"
+                    >
+                      <Settings className="h-4 w-4 mr-2" />
+                      个人中心
+                    </DropdownMenuItem>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={handleLogout}
+                      className="cursor-pointer text-red-600 focus:text-red-600"
+                    >
+                      <LogOut className="h-4 w-4 mr-2" />
+                      退出登录
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              ) : (
+                <Button
+                  className="bg-green-600 hover:bg-green-700 text-white font-medium text-base"
+                  onClick={() => {
+                    // 跳转到登录页面
+                    router.push("/login");
+                  }}
+                >
+                  <User className="h-4 w-4 mr-2" />
+                  登录
+                </Button>
+              )}
+            </div>
           </div>
           <div className="flex items-center md:hidden">
             <button
@@ -131,7 +204,7 @@ export default function HomeHeader() {
               <Input
                 type="search"
                 placeholder="搜索课程、实验..."
-                className="w-full pl-9"
+                className="w-full pl-9 text-sm"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
@@ -139,11 +212,69 @@ export default function HomeHeader() {
             </div>
             <Button 
               type="submit"
-              className="h-10 px-4 bg-indigo-600 hover:bg-indigo-700 text-white font-medium"
+              className="h-10 px-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm"
             >
               搜索
             </Button>
           </form>
+          
+          {/* 移动版登录按钮 */}
+          <div className="px-3 py-2">
+            {isLoggedIn ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700 text-white font-medium text-base flex items-center gap-2"
+                  >
+                    <div className="w-6 h-6 rounded-full overflow-hidden border border-white">
+                      {user?.avatar ? (
+                        <img 
+                          src={user.avatar} 
+                          alt="用户头像" 
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-white/20 flex items-center justify-center">
+                          <User className="h-4 w-4 text-white" />
+                        </div>
+                      )}
+                    </div>
+                    我的
+                    <ChevronDown className="h-4 w-4 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuItem
+                    onClick={() => router.push("/dashboard/home")}
+                    className="cursor-pointer"
+                  >
+                    <Settings className="h-4 w-4 mr-2" />
+                    个人中心
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={handleLogout}
+                    className="cursor-pointer text-red-600 focus:text-red-600"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    退出登录
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button
+                className="w-full bg-green-600 hover:bg-green-700 text-white font-medium text-base"
+                onClick={() => {
+                  // 跳转到登录页面
+                  router.push("/login");
+                }}
+              >
+                <User className="h-4 w-4 mr-2" />
+                登录
+              </Button>
+            )}
+          </div>
+          
           <a
             href="#about"
             className="block px-3 py-2 rounded-md text-lg font-bold text-gray-700 hover:text-indigo-600 hover:bg-gray-50"
