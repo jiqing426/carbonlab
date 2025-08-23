@@ -2,6 +2,7 @@ import type React from "react"
 import "@/app/globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
+import { ErrorProvider } from "@/contexts/error-context"
 import Script from "next/script"
 
 export const metadata = {
@@ -29,7 +30,9 @@ export default function RootLayout({
       </head>
       <body className="font-sans">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light">
-          {children}
+          <ErrorProvider>
+            {children}
+          </ErrorProvider>
         </ThemeProvider>
         <Script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.12.0/math.min.js" />
         <Script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.9.0/p5.min.js" />

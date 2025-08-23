@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { Circle, ChevronRight, Eye, BookOpen } from "lucide-react";
 import { getCourseUnitsAndLessons } from "@/lib/courses";
+import { FeatureLink } from "@/components/ui/feature-link";
 
 interface CourseContentProps {
   courseId: string;
@@ -71,7 +72,7 @@ export function CourseContent({ courseId }: CourseContentProps) {
                   </div>
                   <div className="flex items-center">
                     <span className={`text-sm mr-2 ${isSampleChapter ? 'text-green-600' : 'text-gray-500'}`}>
-                      {unit.lessons.length} 课时
+                      {unit.lessons.length} 节
                     </span>
                     {isSampleChapter && (
                       <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
@@ -82,69 +83,84 @@ export function CourseContent({ courseId }: CourseContentProps) {
                 </div>
               </AccordionTrigger>
               <AccordionContent className={isSampleChapter ? "bg-green-50" : ""}>
-                {isChapter5 && (
-                  <div className="mb-4 p-4 bg-white rounded-lg border border-green-200">
-                    <div className="flex items-center mb-3">
-                      <BookOpen className="h-5 w-5 text-green-600 mr-2" />
-                      <h4 className="font-semibold text-green-800">第5章 碳足迹计量 - 样章预览</h4>
-                    </div>
-                    <p className="text-green-700 text-sm mb-3">
-                      本章是教材的样章内容，完整展示了碳足迹计量的标准、方法和实践应用。
-                      其他章节正在编写中，敬请期待。
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs text-green-600">
-                      <div>• 碳足迹计量标准体系</div>
-                      <div>• 生命周期评价方法</div>
-                      <div>• 碳足迹计算与数据质量</div>
-                      <div>• 实践案例与工具应用</div>
-                    </div>
-                  </div>
-                )}
                 <ul className="space-y-2">
                   {unit.lessons.map((lesson: any, lessonIndex: number) => {
                     const isSubSection = lesson.title.includes('.');
                     const isMainSection = lesson.title.match(/^\d+\.\d+ /);
                     
+                    // 为第5章创建特殊的链接
+                    const lessonHref = isChapter5 
+                      ? `/courses/${courseId}/chapter-5`
+                      : `/courses/${courseId}/lessons/${lesson.id}`;
+                    
+                    // 判断课时是否可用（只有第5章可用）
+                    const isLessonAvailable = isChapter5;
+                    
                     return (
                       <li key={lessonIndex}>
-                        <Link
-                          href={`/courses/${courseId}/lessons/${lesson.id}`}
-                          className={`flex items-center p-3 rounded transition-colors ${
-                            isSampleChapter 
-                              ? 'hover:bg-green-100 border-l-4 border-green-300' 
-                              : 'hover:bg-gray-100'
-                          }`}
-                        >
-                          <Circle className={`mr-3 flex-shrink-0 ${
-                            isSampleChapter ? 'text-green-500' : 'text-gray-300'
-                          }`} />
-                          <div className="flex-grow">
-                            <span className={`block ${
-                              isMainSection 
-                                ? 'font-semibold text-green-800' 
-                                : isSubSection 
-                                  ? 'font-medium text-green-600 ml-4' 
-                                  : 'text-gray-800'
-                            }`}>
-                              {lesson.title}
-                            </span>
-                            <span className={`text-xs mt-1 block ${
-                              isSampleChapter ? 'text-green-600' : 'text-gray-500'
-                            }`}>
-                              {lesson.description}
-                            </span>
-                          </div>
-                          <div className="flex items-center space-x-2">
-                            <span className={`text-xs ${
-                              isSampleChapter ? 'text-green-600' : 'text-gray-400'
-                            }`}>
-                              {lesson.duration}分钟
-                            </span>
-                            <ChevronRight className={`h-4 w-4 ${
-                              isSampleChapter ? 'text-green-500' : 'text-gray-400'
-                            }`} />
-                          </div>
-                        </Link>
+                        {isLessonAvailable ? (
+                          // 已开放的课时使用普通Link
+                          <Link
+                            href={lessonHref}
+                            className={`flex items-center justify-between p-3 rounded transition-colors ${
+                              isSampleChapter 
+                                ? 'hover:bg-green-100 border-l-4 border-green-300' 
+                                : 'hover:bg-gray-100'
+                            }`}
+                          >
+                            <div className="flex items-center flex-grow">
+                              <Circle className={`mr-3 flex-shrink-0 ${
+                                isSampleChapter ? 'text-green-500' : 'text-gray-300'
+                              }`} />
+                              <div className="flex-grow">
+                                <span className={`block text-left ${
+                                  isMainSection 
+                                    ? 'font-semibold text-green-800' 
+                                    : isSubSection 
+                                      ? 'font-medium text-green-600 ml-4' 
+                                      : 'text-gray-800'
+                                }`}>
+                                  {lesson.title}
+                                </span>
+                                <span className={`text-xs mt-1 block text-left ${
+                                  isSampleChapter ? 'text-green-600' : 'text-gray-500'
+                                }`}>
+                                  {lesson.description}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center ml-4">
+                              <ChevronRight className={`h-4 w-4 ${
+                                isSampleChapter ? 'text-green-500' : 'text-gray-400'
+                              }`} />
+                            </div>
+                          </Link>
+                        ) : (
+                          // 未开放的课时使用FeatureLink显示弹框
+                          <FeatureLink
+                            href={lessonHref}
+                            isAvailable={false}
+                            featureName={lesson.title}
+                            className={`flex items-center justify-between p-3 rounded transition-colors cursor-pointer ${
+                              'hover:bg-gray-100'
+                            }`}
+                          >
+                            <div className="flex items-center flex-grow">
+                              <Circle className="mr-3 flex-shrink-0 text-gray-300" />
+                              <div className="flex-grow">
+                                <span className="block text-gray-800 text-left">
+                                  {lesson.title}
+                                </span>
+                                <span className="text-xs mt-1 block text-gray-500 text-left">
+                                  {lesson.description}
+                                </span>
+                              </div>
+                            </div>
+                            <div className="flex items-center ml-4">
+                              <ChevronRight className="h-4 w-4 text-gray-400" />
+                            </div>
+                          </FeatureLink>
+                        )}
                       </li>
                     );
                   })}
@@ -154,24 +170,6 @@ export function CourseContent({ courseId }: CourseContentProps) {
           );
         })}
       </Accordion>
-
-      {/* 课程说明 */}
-      <div className="mt-8 p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-lg border border-green-200">
-        <h3 className="text-lg font-semibold text-green-800 mb-3 flex items-center">
-          <BookOpen className="h-5 w-5 mr-2" />
-          课程说明
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-green-700">
-          <div>
-            <h4 className="font-medium mb-2">📖 教材编写进度</h4>
-            <p>目前第5章"碳足迹计量"已完成编写，作为样章供大家预览学习。其他章节正在编写中。</p>
-          </div>
-          <div>
-            <h4 className="font-medium mb-2">🎯 样章内容</h4>
-            <p>第5章完整展示了碳足迹计量的标准、LCA方法和数据质量控制等核心内容。</p>
-          </div>
-        </div>
-      </div>
     </div>
   );
 }
