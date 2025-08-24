@@ -1,3 +1,5 @@
+"use client"
+
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -413,7 +415,9 @@ export function ReportStep({
             <Button 
               onClick={() => {
                 setIsCompleteDialogOpen(false)
-                window.location.href = "/"
+                if (typeof window !== 'undefined') {
+                  window.location.href = "/"
+                }
               }} 
               variant="outline"
               className="flex-1"

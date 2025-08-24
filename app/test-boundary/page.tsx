@@ -3,7 +3,7 @@
 import React from "react";
 import { Button } from "@/components/ui/button";
 import { useError } from "@/contexts/error-context";
-import { FeatureLink, ExperimentLink, CourseLink } from "@/components/ui/feature-link";
+import { FeatureLink, ExperimentLink } from "@/components/ui/feature-link";
 import Link from "next/link";
 
 export default function TestBoundaryPage() {
@@ -68,13 +68,14 @@ export default function TestBoundaryPage() {
                 >
                   实验链接（未开放）
                 </ExperimentLink>
-                <CourseLink
+                <FeatureLink
                   href="/courses/advanced"
-                  courseName="高级课程"
+                  isAvailable={false}
+                  featureName="高级课程"
                   className="w-full bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-colors"
                 >
                   课程链接（未开放）
-                </CourseLink>
+                </FeatureLink>
               </div>
             </div>
 

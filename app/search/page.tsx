@@ -54,7 +54,8 @@ function SearchContent() {
       course: "课程",
       experiment: "实验",
       article: "文章",
-      news: "资讯"
+      news: "资讯",
+      dataset: "数据集"
     }
     return labels[type] || type
   }
@@ -64,7 +65,8 @@ function SearchContent() {
       course: "bg-blue-100 text-blue-800",
       experiment: "bg-green-100 text-green-800",
       article: "bg-purple-100 text-purple-800",
-      news: "bg-orange-100 text-orange-800"
+      news: "bg-orange-100 text-orange-800",
+      dataset: "bg-teal-100 text-teal-800"
     }
     return colors[type] || "bg-gray-100 text-gray-800"
   }
@@ -104,6 +106,7 @@ function SearchContent() {
             <TabsTrigger value="experiment">实验</TabsTrigger>
             <TabsTrigger value="article">文章</TabsTrigger>
             <TabsTrigger value="news">资讯</TabsTrigger>
+            <TabsTrigger value="dataset">数据集</TabsTrigger>
           </TabsList>
         </Tabs>
 
