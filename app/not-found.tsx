@@ -10,24 +10,26 @@ export default function NotFound() {
 
   useEffect(() => {
     // 检查当前URL，判断是否应该显示弹框
-    const currentPath = window.location.pathname;
-    
-    // 只对特定的未开放功能显示弹框
-    const shouldShowModal = 
-      currentPath.includes('/experiments/') ||
-      currentPath.includes('/lessons/') ||
-      currentPath.includes('/news') ||
-      currentPath.includes('/reports') ||
-      currentPath.includes('/datasets') ||
-      currentPath.includes('/admin');
-    
-    if (shouldShowModal) {
-      // 延迟显示弹框
-      const timer = setTimeout(() => {
-        handleNotFound();
-        setShowModal(true);
-      }, 100);
-      return () => clearTimeout(timer);
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname;
+      
+      // 只对特定的未开放功能显示弹框
+      const shouldShowModal = 
+        currentPath.includes('/experiments/') ||
+        currentPath.includes('/lessons/') ||
+        currentPath.includes('/news') ||
+        currentPath.includes('/reports') ||
+        currentPath.includes('/datasets') ||
+        currentPath.includes('/admin');
+      
+      if (shouldShowModal) {
+        // 延迟显示弹框
+        const timer = setTimeout(() => {
+          handleNotFound();
+          setShowModal(true);
+        }, 100);
+        return () => clearTimeout(timer);
+      }
     }
   }, [handleNotFound]);
 

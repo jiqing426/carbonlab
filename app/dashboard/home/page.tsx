@@ -12,7 +12,6 @@ import {
   LogOut, 
   Home,
   Calendar,
-
   Shield,
   Mail,
   Phone
@@ -157,10 +156,12 @@ export default function DashboardHomePage() {
       }
     }
 
-    window.addEventListener('message', handleLearningActivity)
-    
-    return () => {
-      window.removeEventListener('message', handleLearningActivity)
+    if (typeof window !== 'undefined') {
+      window.addEventListener('message', handleLearningActivity)
+      
+      return () => {
+        window.removeEventListener('message', handleLearningActivity)
+      }
     }
   }, [])
 

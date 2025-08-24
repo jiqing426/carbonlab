@@ -2041,7 +2041,11 @@ export default function CarbonNeutralPredictionPage() {
                   重新开始实验
                 </Button>
                 <Button 
-                  onClick={() => window.location.href = '/'}
+                  onClick={() => {
+                    if (typeof window !== 'undefined') {
+                      window.location.href = '/'
+                    }
+                  }}
                   variant="outline"
                   className="border-green-300 text-green-700 hover:bg-green-50"
                 >

@@ -26,13 +26,17 @@ export function NotFoundModal({ isOpen, onClose, message }: NotFoundModalProps) 
   const handleGoHome = () => {
     onClose();
     // 使用 router.push 而不是 window.location.href 来避免页面刷新
-    window.location.href = "/";
+    if (typeof window !== 'undefined') {
+      window.location.href = "/";
+    }
   };
 
   const handleGoBack = () => {
     onClose();
     // 使用 history.back() 返回上一页
-    window.history.back();
+    if (typeof window !== 'undefined') {
+      window.history.back();
+    }
   };
 
   return (

@@ -121,3 +121,4 @@ export const trackCourseComplete = (title: string) => {
 export const trackExperimentComplete = (title: string) => {
   trackLearningActivity({ type: 'experiment_complete', title })
 }
+

@@ -138,3 +138,4 @@ useEffect(() => {
 - 使用 `localStorage` 进行数据持久化
 - 使用 `useEffect` 监听消息事件
 - 支持实时数据更新和可视化展示
+

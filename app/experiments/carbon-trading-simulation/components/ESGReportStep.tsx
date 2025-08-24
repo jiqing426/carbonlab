@@ -1,3 +1,5 @@
+"use client"
+
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
@@ -701,7 +703,11 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete, yearlyRe
             <Button onClick={() => { setShowFinishDialog(false); downloadESGReport(); }} className="w-full bg-blue-600 hover:bg-blue-700">
               <Download className="mr-2 h-4 w-4" />下载ESG报告
             </Button>
-            <Button onClick={() => { window.location.href = "/" }} variant="outline" className="w-full">返回主页</Button>
+            <Button onClick={() => { 
+              if (typeof window !== 'undefined') {
+                window.location.href = "/"
+              }
+            }} variant="outline" className="w-full">返回主页</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

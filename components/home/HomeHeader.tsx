@@ -1,12 +1,13 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useState, useRef } from "react"
 import { Input } from "@/components/ui/input"
 import { Search, User, Settings, LogOut, ChevronDown } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
 import { useUserStore } from "@/lib/stores/user-store"
 import { toast } from "sonner"
+import { getSearchSuggestions } from "@/lib/utils/search"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -18,6 +19,9 @@ import {
 export default function HomeHeader() {
   const router = useRouter()
   const [searchQuery, setSearchQuery] = useState("")
+  const [showSuggestions, setShowSuggestions] = useState(false)
+  const [suggestions, setSuggestions] = useState<string[]>([])
+  const searchRef = useRef<HTMLDivElement>(null)
   const { isLoggedIn, user, logout } = useUserStore()
 
   const handleLogout = () => {
@@ -64,8 +68,41 @@ export default function HomeHeader() {
     e.preventDefault()
     if (searchQuery.trim()) {
       router.push(`/search?q=${encodeURIComponent(searchQuery.trim())}`)
+      setShowSuggestions(false)
     }
   }
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+    setSearchQuery(value)
+    
+    if (value.trim()) {
+      const newSuggestions = getSearchSuggestions(value)
+      setSuggestions(newSuggestions)
+      setShowSuggestions(newSuggestions.length > 0)
+    } else {
+      setShowSuggestions(false)
+      setSuggestions([])
+    }
+  }
+
+  const handleSuggestionClick = (suggestion: string) => {
+    setSearchQuery(suggestion)
+    setShowSuggestions(false)
+    router.push(`/search?q=${encodeURIComponent(suggestion)}`)
+  }
+
+  // 点击外部关闭搜索建议
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (searchRef.current && !searchRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false)
+      }
+    }
+
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
 
   return (
     <nav className="bg-green-50/80 shadow-sm sticky top-0 z-50">
@@ -110,15 +147,30 @@ export default function HomeHeader() {
               数智洞察
             </a>
             <form onSubmit={handleSearch} className="relative flex gap-2">
-              <div className="relative">
+              <div className="relative" ref={searchRef}>
                 <Input
                   type="search"
                   placeholder="搜索课程、实验..."
                   className="w-[160px] pl-9 text-sm"
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={handleInputChange}
                 />
                 <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
+                
+                {/* 搜索建议 */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-50 mt-1 min-w-[200px]">
+                    {suggestions.map((suggestion, index) => (
+                      <div
+                        key={index}
+                        className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 border-b border-gray-100 last:border-b-0"
+                        onClick={() => handleSuggestionClick(suggestion)}
+                      >
+                        {suggestion}
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
               <Button 
                 type="submit"
@@ -206,9 +258,24 @@ export default function HomeHeader() {
                 placeholder="搜索课程、实验..."
                 className="w-full pl-9 text-sm"
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
+                onChange={handleInputChange}
               />
               <Search className="absolute left-5 top-4 h-4 w-4 text-gray-500" />
+              
+              {/* 移动版搜索建议 */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="absolute top-full left-0 right-0 bg-white border border-gray-200 rounded-md shadow-lg z-50 mt-1">
+                  {suggestions.map((suggestion, index) => (
+                    <div
+                      key={index}
+                      className="px-4 py-2 hover:bg-gray-50 cursor-pointer text-sm text-gray-700 border-b border-gray-100 last:border-b-0"
+                      onClick={() => handleSuggestionClick(suggestion)}
+                    >
+                      {suggestion}
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
             <Button 
               type="submit"

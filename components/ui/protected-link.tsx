@@ -139,3 +139,4 @@ export function CourseLink({
     </a>
   )
 }
+
