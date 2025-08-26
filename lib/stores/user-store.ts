@@ -11,6 +11,8 @@ interface User {
   latest_login_time?: string
   registered_at?: string
   is_frozen?: boolean
+  roles?: string[]
+  permissions?: string[]
 }
 
 interface Token {
@@ -85,6 +87,10 @@ export const useUserStore = create<UserStore>()(
             latest_login_time: response.data.user.latest_login_time,
             registered_at: response.data.user.registered_at,
             is_frozen: response.data.user.is_frozen,
+            // 从user_roles中提取角色信息
+            roles: response.data.user_roles?.map(role => role.role_type) || [],
+            // 从user_privileges中提取权限信息
+            permissions: response.data.user_privileges?.map(privilege => privilege.toString()) || []
           }
           
           const token: Token = {

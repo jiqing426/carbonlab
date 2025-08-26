@@ -14,7 +14,7 @@ export const API_CONFIG = {
   ENDPOINTS: {
     LOGIN: '/auth/v1/login/username-password',
     VALIDATE_TOKEN: '/auth/v1/validate',
-    CHANGE_PASSWORD: '/api/user/change-password',
+    CHANGE_PASSWORD: '/account/v1/user',  // 使用用户更新端点
     GET_APP_TOKEN: '/app/v1/token',
   },
   
