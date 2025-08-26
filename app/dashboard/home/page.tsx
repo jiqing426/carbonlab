@@ -266,7 +266,7 @@ export default function DashboardHomePage() {
           
           // 延迟跳转到登录页面
           setTimeout(() => {
-            window.location.href = '/login'
+            router.push('/login')
           }, 1500)
         } else {
           toast.error(data.message || '密码修改失败')
