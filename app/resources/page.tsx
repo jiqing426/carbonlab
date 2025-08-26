@@ -12,6 +12,7 @@ import { getCourses } from "@/lib/courses";
 import { modules, experiments, Experiment } from "@/lib/database";
 import { Course } from "@/lib/database";
 import ExperimentList from "@/components/module/ExperimentList";
+import { ExperimentLink } from "@/components/ui/feature-link";
 
 // 定义课程类型映射
 const difficultyMap: Record<string, string> = {
@@ -228,13 +229,14 @@ export default function ResourcesPage() {
                     </div>
                   </div>
                   <p className="text-gray-600 mb-4">{experiment.description}</p>
-                  <a
+                  <ExperimentLink
                     href={experiment.route || `/experiments/${experiment.id}`}
+                    experimentName={experiment.title}
                     className={`inline-block ${getModuleButtonClass(experiment.module)} text-white font-medium px-4 py-2 rounded-lg transition duration-300 transform hover:scale-105`}
                   >
                     <i className="fas fa-play mr-2"></i>
                     开始实验
-                  </a>
+                  </ExperimentLink>
                 </div>
               </div>
             ))}

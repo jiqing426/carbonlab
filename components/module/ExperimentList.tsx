@@ -5,6 +5,7 @@ import Link from "next/link"
 import { Play } from "lucide-react"
 import { MonitorIcon, CalculateIcon, TradeIcon, NeutralIcon } from "@/components/module/ModuleIcons"
 import { toast } from "sonner"
+import { ExperimentLink } from "@/components/ui/feature-link"
 
 interface ExperimentListProps {
   experiments: Experiment[]
@@ -95,13 +96,14 @@ export default function ExperimentList({
                 </div>
                 <p className="text-gray-600 mb-4">{experiment.description}</p>
                 {isAvailable ? (
-                  <Link
-                    href={experiment.route || `/experiment/${experiment.id}`}
+                  <ExperimentLink
+                    href={experiment.route || `/experiments/${experiment.id}`}
+                    experimentName={experiment.title}
                     className={`inline-block ${getModuleButtonClass(experiment.module)} text-white font-medium px-4 py-2 rounded-lg transition duration-300 transform hover:scale-105`}
                   >
                     {experiment.icon ? <i className="fas fa-play mr-2"></i> : <Play className="h-4 w-4 inline-block mr-2" />}
                     开始实验
-                  </Link>
+                  </ExperimentLink>
                 ) : (
                   <button
                     onClick={() => handleExperimentClick(experiment)}

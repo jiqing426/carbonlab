@@ -91,6 +91,10 @@ const data = {
           url: "/admin/users",
         },
         {
+          title: "角色管理",
+          url: "/admin/roles",
+        },
+        {
           title: "权限管理",
           url: "/admin/users/permissions",
         },

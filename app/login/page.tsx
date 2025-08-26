@@ -26,6 +26,7 @@ import Link from 'next/link'
 import { toast } from 'sonner'
 import { useUserStore } from '@/lib/stores/user-store'
 import { API_CONFIG } from '@/lib/config/api'
+import { sendSmsCode, verifySmsCode } from '@/lib/api/sms'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -51,13 +52,15 @@ export default function LoginPage() {
 
     try {
       setIsLoading(true)
-      // 这里可以调用实际的发送验证码API
-      // const result = await sendSmsCode(phone)
+      console.log('开始发送短信验证码到:', phone)
       
-      // 模拟发送成功
-      setSmsId(12345) // 模拟sms_id
+      // 调用真实的发送验证码API
+      const result = await sendSmsCode(phone, 'login', API_CONFIG.APP.APP_KEY)
+      
+      console.log('短信验证码发送成功，记录ID:', result.id)
+      setSmsId(parseInt(result.id))
       setCountdown(60)
-      toast.success('验证码已发送')
+      toast.success('验证码已发送，请注意查收')
 
       const timer = setInterval(() => {
         setCountdown(prev => {
@@ -69,7 +72,8 @@ export default function LoginPage() {
         })
       }, 1000)
     } catch (error) {
-      toast.error('发送验证码失败')
+      console.error('发送短信验证码失败:', error)
+      toast.error(error instanceof Error ? error.message : '发送验证码失败，请稍后重试')
     } finally {
       setIsLoading(false)
     }
@@ -123,11 +127,28 @@ export default function LoginPage() {
       setIsLoading(true)
       setError('')
       
-      // 注意：目前API只支持用户名密码登录，手机验证码登录需要另外的API
-      toast.error('手机验证码登录功能暂未开放，请使用用户名密码登录')
-      setError('手机验证码登录功能暂未开放，请使用用户名密码登录')
+      console.log('开始验证短信验证码，记录ID:', smsId, '验证码:', phoneCode)
+      
+      // 验证短信验证码
+      const isValid = await verifySmsCode(smsId.toString(), phoneCode.trim(), API_CONFIG.APP.APP_KEY)
+      
+      if (isValid) {
+        console.log('短信验证码验证成功')
+        toast.success('验证码验证成功')
+        
+        // 这里可以调用手机号登录API
+        // 目前暂时跳转到首页，实际应该调用登录API
+        toast.info('手机验证码登录功能开发中，请使用用户名密码登录')
+        setError('手机验证码登录功能开发中，请使用用户名密码登录')
+      } else {
+        console.log('短信验证码验证失败')
+        toast.error('验证码错误，请重新输入')
+        setError('验证码错误，请重新输入')
+      }
     } catch (error) {
-      setError(error instanceof Error ? error.message : '登录失败，请检查验证码')
+      console.error('验证短信验证码失败:', error)
+      setError(error instanceof Error ? error.message : '验证失败，请稍后重试')
+      toast.error(error instanceof Error ? error.message : '验证失败，请稍后重试')
     } finally {
       setIsLoading(false)
     }
@@ -154,9 +175,10 @@ export default function LoginPage() {
                 <Lock className='h-4 w-4' />
                 密码登录
               </TabsTrigger>
-              <TabsTrigger value='phone' className='flex items-center gap-2'>
+              <TabsTrigger value='phone' className='flex items-center gap-2' disabled>
                 <Phone className='h-4 w-4' />
                 验证码登录
+                <span className='text-xs text-gray-400'>(暂不可用)</span>
               </TabsTrigger>
             </TabsList>
 
@@ -239,13 +261,19 @@ export default function LoginPage() {
             </TabsContent>
 
             <TabsContent value='phone' className='space-y-4'>
+              <div className='flex items-center gap-2 p-3 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md'>
+                <AlertCircle className='h-4 w-4' />
+                <span>短信验证码登录功能暂时不可用，请使用用户名密码登录</span>
+              </div>
+              
               {error && (
                 <div className='flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md'>
                   <AlertCircle className='h-4 w-4' />
                   <span>{error}</span>
                 </div>
               )}
-              <form onSubmit={handlePhoneLogin} className='space-y-4'>
+              
+              <form onSubmit={handlePhoneLogin} className='space-y-4 opacity-50 pointer-events-none'>
                 <div className='space-y-2'>
                   <Label htmlFor='phone'>手机号</Label>
                   <div className='relative'>
@@ -289,6 +317,23 @@ export default function LoginPage() {
                 </div>
                 <Button type='submit' className='w-full bg-green-600 hover:bg-green-700' disabled={isLoading}>
                   {isLoading ? '登录中...' : '登录'}
+                </Button>
+                
+                {/* 调试按钮 - 仅用于调试 */}
+                <Button
+                  type='button'
+                  variant='outline'
+                  className='w-full mt-2'
+                  onClick={() => {
+                    console.log('=== 短信发送调试信息 ===')
+                    console.log('当前手机号:', phone)
+                    console.log('当前APP_KEY:', API_CONFIG.APP.APP_KEY)
+                    console.log('当前环境:', process.env.NODE_ENV)
+                    console.log('API基础URL:', process.env.NEXT_PUBLIC_TALE_BACKEND_URL || 'https://api.turingue.com')
+                    toast.info('调试信息已输出到控制台')
+                  }}
+                >
+                  调试信息
                 </Button>
               </form>
             </TabsContent>
