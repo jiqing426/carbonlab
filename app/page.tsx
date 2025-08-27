@@ -591,66 +591,71 @@ export default function Home() {
                 <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-br from-indigo-400 to-blue-400 opacity-10 rounded-full translate-y-12 -translate-x-12"></div>
                 
                 <div className="relative z-10">
-                  <div className="flex items-center mb-6">
-                    <div className="w-12 h-12 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-xl flex items-center justify-center mr-4 shadow-lg">
-                      <i className="fas fa-university text-white text-xl"></i>
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-800">平台简介</h3>
+                  <div className="text-center mb-8">
+                    <h3 className="text-3xl font-bold text-gray-800 mb-2">平台简介</h3>
                   </div>
                   
-                  <div className="bg-white/70 backdrop-blur-sm p-6 rounded-xl border border-white/50 shadow-sm">
-                    <p className="text-gray-700 text-lg leading-relaxed text-justify">
+                  <div className="text-center">
+                    <h4 className="text-xl font-bold text-gray-800 mb-6">用心打造培根铸魂、启智增慧的精品平台</h4>
+                    <p className="text-gray-700 text-lg leading-relaxed max-w-4xl mx-auto mb-8">
                       为积极践行国家双碳战略，助力高校、行业机构、企业决策者提升"双碳"知识、能力和战略高度，设计涵盖应用场景、知识模块以及系统资源的碳经济与管理AI实训平台，加强学生对碳排放、碳交易、碳足迹等关键知识的理解和应用能力，推动教学内容的改革和教学创新。
                     </p>
+                    
+                    <div className="flex justify-center">
+                      <a href="/resources" className="bg-gradient-to-r from-blue-500 to-indigo-600 hover:from-blue-600 hover:to-indigo-700 text-white px-8 py-3 rounded-lg font-medium transition-all duration-300 hover:shadow-md flex items-center shadow-lg">
+                        了解更多平台信息
+                        <span className="ml-2 text-lg">{">>"}</span>
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>
 
               {/* 平台优势 */}
-              <div className="relative overflow-hidden bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-8 rounded-2xl border border-green-200 shadow-lg">
+              <div className="relative overflow-hidden bg-transparent p-8 rounded-2xl border border-green-200 shadow-lg">
                 <div className="absolute top-0 left-0 w-28 h-28 bg-gradient-to-br from-green-400 to-teal-400 opacity-10 rounded-full -translate-y-14 -translate-x-14"></div>
                 <div className="absolute bottom-0 right-0 w-20 h-20 bg-gradient-to-br from-emerald-400 to-green-400 opacity-10 rounded-full translate-y-10 translate-x-10"></div>
                 
                 <div className="relative z-10">
-                  <div className="flex items-center mb-6">
-                    <div className="w-12 h-12 bg-gradient-to-r from-green-600 to-emerald-600 rounded-xl flex items-center justify-center mr-4 shadow-lg">
-                      <i className="fas fa-star text-white text-xl"></i>
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-800">平台优势</h3>
+                  <div className="text-center mb-8">
+                    <h3 className="text-3xl font-bold text-gray-800 mb-2">平台优势</h3>
                   </div>
                   
-                  <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    <div className="bg-white/70 backdrop-blur-sm p-6 rounded-xl border border-white/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                      <div className="flex items-center mb-4">
-                        <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center mr-3">
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    {/* 闭环式实训体系 */}
+                    <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-6 rounded-xl border border-green-200 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 text-center">
+                      <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse">
+                        <div className="w-8 h-8 bg-blue-400 rounded-lg flex items-center justify-center animate-bounce">
                           <i className="fas fa-link text-white text-sm"></i>
                         </div>
-                        <h4 className="font-semibold text-gray-800">闭环式实训体系</h4>
                       </div>
+                      <h4 className="font-bold text-gray-800 mb-3 text-lg">闭环式实训体系</h4>
                       <p className="text-gray-600 text-sm leading-relaxed">
                         从碳监测、核算、管理到碳市场、金融、规则，打造闭环式碳能力实训体系，培育市场急需的"双碳"精英人才。
                       </p>
                     </div>
                     
-                    <div className="bg-white/70 backdrop-blur-sm p-6 rounded-xl border border-white/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                      <div className="flex items-center mb-4">
-                        <div className="w-10 h-10 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center mr-3">
+                    {/* AI智能助教 */}
+                    <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-6 rounded-xl border border-green-200 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 text-center">
+                      <div className="w-16 h-16 bg-gradient-to-r from-purple-500 to-pink-500 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse">
+                        <div className="w-8 h-8 bg-purple-400 rounded-lg flex items-center justify-center relative animate-spin">
                           <i className="fas fa-brain text-white text-sm"></i>
                         </div>
-                        <h4 className="font-semibold text-gray-800">AI智能助教</h4>
                       </div>
+                      <h4 className="font-bold text-gray-800 mb-3 text-lg">AI智能助教</h4>
                       <p className="text-gray-600 text-sm leading-relaxed">
                         整合数字教材、真实案例、虚拟实验与AI智能助教，突破传统局限，支持按需组合的个性化教学与学习体验。
                       </p>
                     </div>
                     
-                    <div className="bg-white/70 backdrop-blur-sm p-6 rounded-xl border border-white/50 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1">
-                      <div className="flex items-center mb-4">
-                        <div className="w-10 h-10 bg-gradient-to-r from-green-500 to-teal-500 rounded-lg flex items-center justify-center mr-3">
+                    {/* 多元化场景 */}
+                    <div className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 p-6 rounded-xl border border-green-200 shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-1 text-center">
+                      <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-teal-500 rounded-xl flex items-center justify-center mx-auto mb-4 shadow-lg animate-pulse">
+                        <div className="w-8 h-8 bg-green-400 rounded-lg flex items-center justify-center animate-ping">
                           <i className="fas fa-leaf text-white text-sm"></i>
                         </div>
-                        <h4 className="font-semibold text-gray-800">多元化场景</h4>
                       </div>
+                      <h4 className="font-bold text-gray-800 mb-3 text-lg">多元化场景</h4>
                       <p className="text-gray-600 text-sm leading-relaxed">
                         构建绿色交通、零碳园区等高仿真多元化场景，赋能学生跨学科应用能力，无缝对接产业真实挑战。
                       </p>
