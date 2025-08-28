@@ -1042,6 +1042,11 @@ export default function DashboardHomePage() {
         icon: Shield
       },
       {
+        id: 'class-management',
+        title: '班级管理',
+        icon: Users
+      },
+      {
         id: 'app-token-management',
         title: 'App Token管理',
         icon: Key
@@ -1076,8 +1081,14 @@ export default function DashboardHomePage() {
         id: 'learning-progress',
         title: '学习进度',
         icon: BookOpen
+      },
+      {
+        id: 'resources-management',
+        title: '资料库管理',
+        icon: FileText
       }
     ] : []),
+
     // 学生功能 - 支持student角色
     ...(primaryRole === 'student' ? [
       {
@@ -2312,6 +2323,205 @@ export default function DashboardHomePage() {
           </div>
         )
 
+      case 'class-management':
+        // 权限检查：只有admin角色和carbon账号可以访问班级管理
+        const classUserRoles = user?.roles || []
+        const classPrimaryRole = Array.isArray(classUserRoles) && classUserRoles.length > 0 ? classUserRoles[0] : null
+        const isClassCarbon = user?.username === 'carbon'
+        const canManageClasses = isClassCarbon || classPrimaryRole === 'admin'
+        
+        if (!canManageClasses) {
+          return (
+            <div className="space-y-6">
+              <Card className="border-0 shadow-sm bg-red-50">
+                <CardContent className="p-6">
+                  <div className="text-center">
+                    <Shield className="h-16 w-16 text-red-400 mx-auto mb-4" />
+                    <h2 className="text-xl font-bold text-red-800 mb-2">权限不足</h2>
+                    <p className="text-red-600">您没有权限访问班级管理功能。只有管理员和超级管理员可以管理班级。</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )
+        }
+        
+        return (
+          <div className="space-y-6">
+            {/* 班级管理头部 */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">
+                  {isClassCarbon ? '超级班级管理' : '班级管理'}
+                </h2>
+                {isClassCarbon && (
+                  <p className="text-sm text-gray-600 mt-1">您拥有超级权限，可以查看和管理所有班级信息</p>
+                )}
+                {classPrimaryRole === 'admin' && !isClassCarbon && (
+                  <p className="text-sm text-gray-600 mt-1">管理所有班级，查看班级信息和学生分布</p>
+                )}
+              </div>
+            </div>
+
+            {/* 班级管理功能卡片 */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+              <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-indigo-50 hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-blue-100 rounded-lg">
+                      <Users className="h-6 w-6 text-blue-600" />
+                    </div>
+                    <h4 className="font-semibold text-blue-800">班级列表</h4>
+                  </div>
+                  <p className="text-blue-700 text-sm">查看所有班级信息，包括班级名称、学生数量和创建时间</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-0 shadow-sm bg-gradient-to-br from-green-50 to-emerald-50 hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-green-100 rounded-lg">
+                      <Plus className="h-6 w-6 text-green-600" />
+                    </div>
+                    <h4 className="font-semibold text-green-800">创建班级</h4>
+                  </div>
+                  <p className="text-green-700 text-sm">创建新的班级，设置班级名称、描述和备注信息</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-0 shadow-sm bg-gradient-to-br from-purple-50 to-pink-50 hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-purple-100 rounded-lg">
+                      <Users className="h-6 w-6 text-purple-600" />
+                    </div>
+                    <h4 className="font-semibold text-purple-800">学生分配</h4>
+                  </div>
+                  <p className="text-purple-700 text-sm">为班级分配学生，管理班级成员和权限设置</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-0 shadow-sm bg-gradient-to-br from-orange-50 to-amber-50 hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-orange-100 rounded-lg">
+                      <BarChart3 className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <h4 className="font-semibold text-orange-800">班级统计</h4>
+                  </div>
+                  <p className="text-orange-700 text-sm">查看班级统计信息，包括学生数量、活跃度和学习进度</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-0 shadow-sm bg-gradient-to-br from-teal-50 to-cyan-50 hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-teal-100 rounded-lg">
+                      <Settings className="h-6 w-6 text-teal-600" />
+                    </div>
+                    <h4 className="font-semibold text-teal-800">班级设置</h4>
+                  </div>
+                  <p className="text-teal-700 text-sm">配置班级参数，设置班级规则和访问权限</p>
+                </CardContent>
+              </Card>
+              
+              <Card className="border-0 shadow-sm bg-gradient-to-br from-red-50 to-rose-50 hover:shadow-md transition-shadow">
+                <CardContent className="p-6">
+                  <div className="flex items-center gap-3 mb-3">
+                    <div className="p-2 bg-red-100 rounded-lg">
+                      <FileText className="h-6 w-6 text-red-600" />
+                    </div>
+                    <h4 className="font-semibold text-red-800">班级报告</h4>
+                  </div>
+                  <p className="text-red-700 text-sm">生成班级报告，导出班级数据和统计信息</p>
+                </CardContent>
+              </Card>
+            </div>
+
+
+
+
+
+            {/* 班级信息卡片 */}
+            <Card className="border-0 shadow-sm bg-gradient-to-br from-blue-50 to-indigo-50">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-blue-800">班级概览</h3>
+                  <Button 
+                    variant="outline" 
+                    size="sm"
+                    className="border-blue-200 text-blue-600 hover:bg-blue-50"
+                    onClick={() => router.push('/dashboard/classes')}
+                  >
+                    <Settings className="w-4 h-4 mr-2" />
+                    管理班级
+                  </Button>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+                  <div className="text-center p-3 bg-white rounded-lg border border-blue-100">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {(() => {
+                        try {
+                          const savedClasses = localStorage.getItem('carbonlab-classes')
+                          if (savedClasses) {
+                            const classes = JSON.parse(savedClasses)
+                            return classes.length
+                          }
+                          return 0
+                        } catch {
+                          return 0
+                        }
+                      })()}
+                    </div>
+                    <div className="text-sm text-blue-600">班级总数</div>
+                  </div>
+                  <div className="text-center p-3 bg-white rounded-lg border border-blue-100">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {(() => {
+                        try {
+                          const savedClasses = localStorage.getItem('carbonlab-classes')
+                          if (savedClasses) {
+                            const classes: any[] = JSON.parse(savedClasses)
+                            return classes.filter((c: any) => c.status === 'ongoing').length
+                          }
+                          return 0
+                        } catch {
+                          return 0
+                        }
+                      })()}
+                    </div>
+                    <div className="text-sm text-blue-600">进行中班级</div>
+                  </div>
+                  <div className="text-center p-3 bg-white rounded-lg border border-blue-100">
+                    <div className="text-2xl font-bold text-blue-600">
+                      {(() => {
+                        try {
+                          const savedClasses = localStorage.getItem('carbonlab-classes')
+                          if (savedClasses) {
+                            const classes: any[] = JSON.parse(savedClasses)
+                            return classes.reduce((total: number, cls: any) => total + (cls.currentStudents || 0), 0)
+                          }
+                          return 0
+                        } catch {
+                          return 0
+                        }
+                      })()}
+                    </div>
+                    <div className="text-sm text-blue-600">学生总数</div>
+                  </div>
+                </div>
+                
+                <div className="text-center">
+                  <p className="text-blue-600 text-sm">
+                    点击"管理班级"按钮查看详细班级信息和学生管理
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )
+
       case 'role-management':
         return (
           <div className="space-y-6">
@@ -2949,6 +3159,101 @@ export default function DashboardHomePage() {
                     <div className="text-lg">学习进度功能</div>
                     <div className="text-sm">这里将显示您的学习进度和统计图表</div>
                   </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )
+
+      case 'resources-management':
+        return (
+          <div className="space-y-6">
+            {/* 资料库管理头部 */}
+            <div className="flex justify-between items-center">
+              <div>
+                <h2 className="text-2xl font-bold text-gray-900">资料库管理</h2>
+                <p className="text-gray-600">管理教学资料、文档和资源文件</p>
+              </div>
+              <Button
+                onClick={() => router.push('/dashboard/resources')}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                <FileText className="w-4 h-4 mr-2" />
+                进入资料库
+              </Button>
+            </div>
+
+            {/* 资料库概览 */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <FileText className="w-8 h-8 text-blue-600" />
+                    </div>
+                    <p className="text-2xl font-bold text-blue-900">4</p>
+                    <p className="text-sm text-gray-600">资料库总数</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <BookOpen className="w-8 h-8 text-green-600" />
+                    </div>
+                    <p className="text-2xl font-bold text-green-900">12</p>
+                    <p className="text-sm text-gray-600">文档总数</p>
+                  </div>
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-6">
+                  <div className="text-center">
+                    <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <Users className="w-8 h-8 text-purple-600" />
+                    </div>
+                    <p className="text-2xl font-bold text-purple-900">8</p>
+                    <p className="text-sm text-gray-600">支持类型</p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* 快速操作 */}
+            <Card>
+              <CardContent className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">快速操作</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push('/dashboard/resources')}
+                    className="h-16 text-left justify-start"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Plus className="w-6 h-6 text-blue-600" />
+                      <div>
+                        <div className="font-semibold">创建资料库</div>
+                        <div className="text-sm text-gray-500">新建一个资料库来管理文档</div>
+                      </div>
+                    </div>
+                  </Button>
+
+                  <Button
+                    variant="outline"
+                    onClick={() => router.push('/dashboard/resources')}
+                    className="h-16 text-left justify-start"
+                  >
+                    <div className="flex items-center space-x-3">
+                      <Search className="w-6 h-6 text-green-600" />
+                      <div>
+                        <div className="font-semibold">搜索资料</div>
+                        <div className="text-sm text-gray-500">快速查找需要的教学资料</div>
+                      </div>
+                    </div>
+                  </Button>
                 </div>
               </CardContent>
             </Card>
