@@ -53,6 +53,9 @@ interface Repository {
   createdAt: string;
   updatedAt: string;
   supportedFileTypes: string[];
+  // 新增字段：用于控制特定页面内容
+  controlTarget?: 'latest-policy' | 'hot-news' | 'global-data' | 'china-report';
+  displayOrder?: number; // 显示顺序
 }
 
 const fileTypeOptions = [
@@ -111,39 +114,47 @@ const fileTypeOptions = [
 const mockRepositories: Repository[] = [
   {
     id: 'repo_001',
-    folderName: '碳交易资料库',
-    folderType: ['PDF', 'DOC', 'LINK'],
-    remark: '包含碳交易相关的政策文件、研究报告和在线资源',
+    folderName: '最新政策',
+    folderType: ['PDF'],
+    remark: '存储最新的政策法规文件，控制主页"最新政策"栏目',
     createdAt: '2024-01-15T10:00:00Z',
     updatedAt: '2024-01-15T10:00:00Z',
-    supportedFileTypes: ['PDF', 'DOC', 'LINK']
+    supportedFileTypes: ['PDF'],
+    controlTarget: 'latest-policy',
+    displayOrder: 1,
   },
   {
     id: 'repo_002',
-    folderName: '碳足迹计算资料',
-    folderType: ['PDF', 'EXCEL', 'IMAGE'],
-    remark: '碳足迹计算方法和案例研究资料',
+    folderName: '双碳快讯',
+    folderType: ['EXCEL', 'LINK'],
+    remark: '双碳相关新闻资讯，控制主页"热点新闻"栏目',
     createdAt: '2024-01-16T10:00:00Z',
     updatedAt: '2024-01-16T10:00:00Z',
-    supportedFileTypes: ['PDF', 'EXCEL', 'IMAGE']
+    supportedFileTypes: ['EXCEL', 'LINK'],
+    controlTarget: 'hot-news',
+    displayOrder: 2,
   },
   {
     id: 'repo_003',
-    folderName: '碳金融产品设计',
-    folderType: ['PDF', 'DOC', 'VIDEO'],
-    remark: '碳金融产品设计理论和实践案例',
+    folderName: '数据洞察',
+    folderType: ['EXCEL', 'PDF'],
+    remark: '数据分析和洞察报告，控制datasets页面内容',
     createdAt: '2024-01-17T10:00:00Z',
     updatedAt: '2024-01-17T10:00:00Z',
-    supportedFileTypes: ['PDF', 'DOC', 'VIDEO']
+    supportedFileTypes: ['EXCEL', 'PDF'],
+    controlTarget: 'global-data',
+    displayOrder: 3,
   },
   {
     id: 'repo_004',
-    folderName: '碳监测技术资料',
-    folderType: ['PDF', 'IMAGE', 'LINK'],
-    remark: '碳监测技术和设备相关资料',
+    folderName: '研究报告',
+    folderType: ['PDF', 'LINK'],
+    remark: '学术研究报告和论文，控制reports页面内容',
     createdAt: '2024-01-18T10:00:00Z',
     updatedAt: '2024-01-18T10:00:00Z',
-    supportedFileTypes: ['PDF', 'IMAGE', 'LINK']
+    supportedFileTypes: ['PDF', 'LINK'],
+    controlTarget: 'china-report',
+    displayOrder: 4,
   }
 ];
 
@@ -395,6 +406,9 @@ export default function ResourcesManagement() {
                         支持类型
                       </TableHead>
                       <TableHead className='font-semibold text-gray-900'>
+                        控制目标
+                      </TableHead>
+                      <TableHead className='font-semibold text-gray-900'>
                         创建时间
                       </TableHead>
                       <TableHead className='font-semibold text-gray-900'>
@@ -409,7 +423,7 @@ export default function ResourcesManagement() {
                     {filteredRepositories.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={5}
+                          colSpan={6}
                           className='text-center py-8 text-gray-500'
                         >
                           {searchTerm
@@ -453,6 +467,26 @@ export default function ResourcesManagement() {
                                 </Badge>
                               )}
                             </div>
+                          </TableCell>
+                          <TableCell>
+                            {repo.controlTarget ? (
+                              <Badge 
+                                variant='outline' 
+                                className={`text-xs ${
+                                  repo.controlTarget === 'latest-policy' ? 'border-blue-500 text-blue-600' :
+                                  repo.controlTarget === 'hot-news' ? 'border-green-500 text-green-600' :
+                                  repo.controlTarget === 'global-data' ? 'border-purple-500 text-purple-600' :
+                                  'border-orange-500 text-orange-600'
+                                }`}
+                              >
+                                {repo.controlTarget === 'latest-policy' ? '最新政策' :
+                                 repo.controlTarget === 'hot-news' ? '热点新闻' :
+                                 repo.controlTarget === 'global-data' ? '全球数据' :
+                                 '中国报告'}
+                              </Badge>
+                            ) : (
+                              <span className='text-gray-400 text-xs'>未设置</span>
+                            )}
                           </TableCell>
                           <TableCell className='text-gray-600'>
                             {new Date(repo.createdAt).toLocaleDateString(

@@ -104,6 +104,9 @@ interface Repository {
   createdAt: string;
   updatedAt: string;
   supportedFileTypes: string[];
+  // 新增字段：用于控制特定页面内容
+  controlTarget?: 'latest-policy' | 'hot-news' | 'global-data' | 'china-report';
+  displayOrder?: number; // 显示顺序
 }
 
 // 文件接口类型
@@ -122,21 +125,47 @@ interface FileData {
 const mockRepositories: Repository[] = [
   {
     id: 'repo_001',
-    folderName: '碳交易资料库',
-    folderType: ['PDF', 'DOC', 'LINK'],
-    remark: '包含碳交易相关的政策文件、研究报告和在线资源',
+    folderName: '最新政策',
+    folderType: ['PDF'],
+    remark: '存储最新的政策法规文件，控制主页"最新政策"栏目',
     createdAt: '2024-01-15T10:00:00Z',
     updatedAt: '2024-01-15T10:00:00Z',
-    supportedFileTypes: ['PDF', 'DOC', 'LINK']
+    supportedFileTypes: ['PDF'],
+    controlTarget: 'latest-policy',
+    displayOrder: 1,
   },
   {
     id: 'repo_002',
-    folderName: '碳足迹计算资料',
-    folderType: ['PDF', 'EXCEL', 'IMAGE'],
-    remark: '碳足迹计算方法和案例研究资料',
+    folderName: '双碳快讯',
+    folderType: ['EXCEL', 'LINK'],
+    remark: '双碳相关新闻资讯，控制主页"热点新闻"栏目',
     createdAt: '2024-01-16T10:00:00Z',
     updatedAt: '2024-01-16T10:00:00Z',
-    supportedFileTypes: ['PDF', 'EXCEL', 'IMAGE']
+    supportedFileTypes: ['EXCEL', 'LINK'],
+    controlTarget: 'hot-news',
+    displayOrder: 2,
+  },
+  {
+    id: 'repo_003',
+    folderName: '数据洞察',
+    folderType: ['EXCEL', 'PDF'],
+    remark: '数据分析和洞察报告，控制datasets页面内容',
+    createdAt: '2024-01-17T10:00:00Z',
+    updatedAt: '2024-01-17T10:00:00Z',
+    supportedFileTypes: ['EXCEL', 'PDF'],
+    controlTarget: 'global-data',
+    displayOrder: 3,
+  },
+  {
+    id: 'repo_004',
+    folderName: '研究报告',
+    folderType: ['PDF', 'LINK'],
+    remark: '学术研究报告和论文，控制reports页面内容',
+    createdAt: '2024-01-18T10:00:00Z',
+    updatedAt: '2024-01-18T10:00:00Z',
+    supportedFileTypes: ['PDF', 'LINK'],
+    controlTarget: 'china-report',
+    displayOrder: 4,
   }
 ];
 
@@ -214,16 +243,108 @@ export default function RepositoryDetail() {
       localStorage.setItem('mockRepositories', JSON.stringify(syncedRepositories));
     }
     if (!localStorage.getItem(`files_${repositoryId}`)) {
-      // 动态生成默认文件，使用当前用户名
-      const defaultFiles = mockFiles
-        .filter(file => 
-          file.fileType === 'PDF' || file.fileType === 'DOC' || file.fileType === 'LINK'
-        )
-        .map(file => ({
-          ...file,
-          uploader: user?.username || '未知用户'
-        }));
-      localStorage.setItem(`files_${repositoryId}`, JSON.stringify(defaultFiles));
+      // 根据资料库类型生成示例文件
+      const repository = mockRepositories.find(repo => repo.id === repositoryId);
+      let sampleFiles: any[] = [];
+      
+      if (repository) {
+        switch (repository.controlTarget) {
+          case 'latest-policy':
+            sampleFiles = [
+              {
+                id: 'policy-1',
+                fileName: '生态环境部发布《关于做好2025年碳排放权交易市场数据质量监督管理相关工作的通知》',
+                description: '最新政策文件',
+                url: 'https://www.mee.gov.cn/ywdt/xwfb/202407/t20240722_1082192.shtml',
+                fileType: 'PDF',
+                repositoryId: repositoryId,
+                createdAt: '2025-07-18T10:00:00Z',
+                updatedAt: '2025-07-18T10:00:00Z',
+                uploader: user?.username || '未知用户'
+              },
+              {
+                id: 'policy-2',
+                fileName: '工信部：加快推进工业领域碳达峰碳中和，大力发展绿色制造',
+                description: '工业碳达峰政策',
+                url: 'https://www.miit.gov.cn/zwgk/zcgg/art/2025/art_123456789.html',
+                fileType: 'PDF',
+                repositoryId: repositoryId,
+                createdAt: '2025-07-16T10:00:00Z',
+                updatedAt: '2025-07-16T10:00:00Z',
+                uploader: user?.username || '未知用户'
+              }
+            ];
+            break;
+          case 'hot-news':
+            sampleFiles = [
+              {
+                id: 'news-1',
+                fileName: '全球碳市场发展趋势与中国碳市场建设研讨会在京召开',
+                description: '热点新闻',
+                url: 'https://www.example.com/news/global-carbon-market-trends',
+                fileType: 'LINK',
+                repositoryId: repositoryId,
+                createdAt: '2025-07-18T10:00:00Z',
+                updatedAt: '2025-07-18T10:00:00Z',
+                uploader: user?.username || '未知用户'
+              },
+              {
+                id: 'news-2',
+                fileName: '首批国家级绿色供应链管理企业名单公布，多家企业入选',
+                description: '绿色供应链新闻',
+                url: 'https://www.example.com/news/green-supply-chain-enterprises',
+                fileType: 'LINK',
+                repositoryId: repositoryId,
+                createdAt: '2025-07-17T10:00:00Z',
+                updatedAt: '2025-07-17T10:00:00Z',
+                uploader: user?.username || '未知用户'
+              }
+            ];
+            break;
+          case 'global-data':
+            sampleFiles = [
+              {
+                id: 'data-1',
+                fileName: '2025年可再生能源容量统计数据（IRENA）',
+                description: '全球可再生能源数据',
+                url: 'https://www.irena.org/Publications/2025/Mar/Renewable-capacity-statistics-2025',
+                fileType: 'LINK',
+                repositoryId: repositoryId,
+                createdAt: '2025-07-18T10:00:00Z',
+                updatedAt: '2025-07-18T10:00:00Z',
+                uploader: user?.username || '未知用户'
+              }
+            ];
+            break;
+          case 'china-report':
+            sampleFiles = [
+              {
+                id: 'report-1',
+                fileName: '全国碳市场发展报告 2024',
+                description: '中国碳市场年度报告',
+                url: 'https://www.mee.gov.cn/ywdt/xwfb/202407/t20240722_1082192.shtml',
+                fileType: 'PDF',
+                repositoryId: repositoryId,
+                createdAt: '2025-07-18T10:00:00Z',
+                updatedAt: '2025-07-18T10:00:00Z',
+                uploader: user?.username || '未知用户'
+              }
+            ];
+            break;
+          default:
+            // 使用默认的模拟文件
+            sampleFiles = mockFiles
+              .filter(file => 
+                file.fileType === 'PDF' || file.fileType === 'DOC' || file.fileType === 'LINK'
+              )
+              .map(file => ({
+                ...file,
+                uploader: user?.username || '未知用户'
+              }));
+        }
+      }
+      
+      localStorage.setItem(`files_${repositoryId}`, JSON.stringify(sampleFiles));
     }
     
     loadRepository();

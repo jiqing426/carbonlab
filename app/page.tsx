@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button"
 import { Card } from "@/components/ui/card"
 import { ChevronUp } from "lucide-react"
 import { ExperimentLink, FeatureLink } from "@/components/ui/feature-link"
+import { toast } from "sonner"
 
 // 获取模块背景样式
 const getModuleBgClass = (module: string) => {
@@ -179,20 +180,22 @@ const newsCarouselData = [
   }
 ]
 
-const latestPolicies = [
+// 默认内容数据
+const defaultLatestPolicies = [
   { title: "生态环境部发布《关于做好2025年碳排放权交易市场数据质量监督管理相关工作的通知》", date: "2025-07-18", source: "生态环境部", url: "#" },
   { title: "工信部：加快推进工业领域碳达峰碳中和，大力发展绿色制造", date: "2025-07-16", source: "工业和信息化部", url: "#" },
   { title: "财政部：加大对绿色低碳产业的财政支持力度，完善相关财税政策", date: "2025-07-12", source: "财政部", url: "#" },
   { title: "《中国碳达峰碳中和进展报告（2025）》正式发布", date: "2025-07-08", source: "国务院发展研究中心", url: "#" },
   { title: "国家能源局：2025年非化石能源占能源消费总量比重提高到18%左右", date: "2025-07-05", source: "国家能源局", url: "#" },
-]
-const hotNews = [
+];
+
+const defaultHotNews = [
   { title: "全球碳市场发展趋势与中国碳市场建设研讨会在京召开", url: "#" },
   { title: "首批国家级绿色供应链管理企业名单公布，多家企业入选", url: "#" },
   { title: "全国碳市场上线交易一周年：累计成交额突破200亿元", url: "#" },
   { title: "中国首单绿色资产支持商业票据（ABCP）成功发行", url: "#" },
   { title: "多部门联合发布《关于促进新时代新能源高质量发展的实施方案》", url: "#" },
-]
+];
 const reportCovers = [
   { img: "https://picsum.photos/300/400?random=3", title: "2025中国碳市场年度发展报告", date: "2025-06-30" },
   { img: "https://picsum.photos/300/400?random=4", title: "重点行业碳排放核算与报告指南", date: "2025-06-15" },
@@ -258,6 +261,45 @@ export default function Home() {
   const [currentSlide, setCurrentSlide] = useState(0)
   const timerRef = useRef<NodeJS.Timeout | null>(null)
   const [isHovering, setIsHovering] = useState(false)
+
+  // 从资料库同步的内容数据
+  const [latestPolicies, setLatestPolicies] = useState(defaultLatestPolicies);
+  const [hotNews, setHotNews] = useState(defaultHotNews);
+
+  // 同步资料库内容
+  useEffect(() => {
+    const syncContent = async () => {
+      try {
+        // 动态导入内容同步服务
+        const { contentSyncService } = await import('@/lib/services/content-sync-service');
+        
+        // 同步最新政策和热点新闻
+        const policies = await contentSyncService.getPageContent('latestPolicies');
+        const news = await contentSyncService.getPageContent('hotNews');
+        
+        if (policies.length > 0) {
+          setLatestPolicies(policies.map(item => ({
+            title: item.title,
+            date: item.date ? new Date(item.date).toLocaleDateString('zh-CN') : '未知日期',
+            source: item.source || '未知来源',
+            url: item.url || '#'
+          })));
+        }
+        
+        if (news.length > 0) {
+          setHotNews(news.map(item => ({
+            title: item.title,
+            url: item.url || '#'
+          })));
+        }
+      } catch (error) {
+        console.error('Failed to sync content:', error);
+        // 保持默认内容
+      }
+    };
+
+    syncContent();
+  }, []);
 
   useEffect(() => {
     const mobileMenuButton = document.getElementById("mobile-menu-button")
@@ -437,12 +479,37 @@ export default function Home() {
             <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6 flex flex-col lg:h-[400px] lg:overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-lg">最新政策</h3>
-                <Link 
-                  href="/news" 
-                  className="text-blue-600 text-sm hover:underline"
-                >
-                  更多
-                </Link>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const { contentSyncService } = await import('@/lib/services/content-sync-service');
+                        const policies = await contentSyncService.syncContentFromRepositories();
+                        if (policies.latestPolicies.length > 0) {
+                          setLatestPolicies(policies.latestPolicies.map(item => ({
+                            title: item.title,
+                            date: item.date ? new Date(item.date).toLocaleDateString('zh-CN') : '未知日期',
+                            source: item.source || '未知来源',
+                            url: item.url || '#'
+                          })));
+                          toast.success('内容同步成功！');
+                        }
+                      } catch (error) {
+                        console.error('Sync failed:', error);
+                        toast.error('内容同步失败');
+                      }
+                    }}
+                    className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200"
+                  >
+                    同步资料库
+                  </button>
+                  <Link 
+                    href="/news" 
+                    className="text-blue-600 text-sm hover:underline"
+                  >
+                    更多
+                  </Link>
+                </div>
               </div>
               <ul className="space-y-4">
                 {latestPolicies.map((item, idx) => (
@@ -459,12 +526,35 @@ export default function Home() {
               </ul>
               <div className="flex justify-between items-center mt-8 mb-4">
                 <h3 className="font-bold text-lg">热点新闻</h3>
-                <Link 
-                  href="/news" 
-                  className="text-blue-600 text-sm hover:underline"
-                >
-                  更多
-                </Link>
+                <div className="flex items-center gap-2">
+                  <button 
+                    onClick={async () => {
+                      try {
+                        const { contentSyncService } = await import('@/lib/services/content-sync-service');
+                        const news = await contentSyncService.syncContentFromRepositories();
+                        if (news.hotNews.length > 0) {
+                          setHotNews(news.hotNews.map(item => ({
+                            title: item.title,
+                            url: item.url || '#'
+                          })));
+                          toast.success('热点新闻同步成功！');
+                        }
+                      } catch (error) {
+                        console.error('Sync failed:', error);
+                        toast.error('热点新闻同步失败');
+                      }
+                    }}
+                    className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded hover:bg-green-200"
+                  >
+                    同步资料库
+                  </button>
+                  <Link 
+                    href="/news" 
+                    className="text-blue-600 text-sm hover:underline"
+                  >
+                    更多
+                  </Link>
+                </div>
               </div>
               <ul className="space-y-3">
                 {hotNews.map((item, idx) => (

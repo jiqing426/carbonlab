@@ -397,51 +397,30 @@ export default function ClassDetailPage() {
         
         console.log('🔍 准备调用getUserGroups函数，参数:', { page: currentPage, size: pageSize });
         
-        // 调用用户组API
-        const userGroupsResponse = await getUserGroups({
+        // 调用用户列表API
+        const usersResponse = await getUsers({
           page: currentPage,
           size: pageSize,
-        });
+        }, 'oa_HBamFxnA');
         
-        console.log('🔍 用户组API响应:', userGroupsResponse);
+        console.log('🔍 用户列表API响应:', usersResponse);
         
-        if (userGroupsResponse && userGroupsResponse.content) {
-          console.log('✅ 成功从真实API加载用户组列表:', userGroupsResponse.content.length, '个用户组');
-          console.log('🔍 用户组数据示例:', userGroupsResponse.content[0]);
+        if (usersResponse && usersResponse.content) {
+          console.log('✅ 成功从真实API加载用户列表:', usersResponse.content.length, '个用户');
+          console.log('🔍 用户数据示例:', usersResponse.content[0]);
           
-          // 将用户组数据转换为用户数据格式（为了兼容现有的UI）
-          const convertedUsers = userGroupsResponse.content.map((group: any) => ({
-            user: {
-              user_id: group.id || group.user_group_id,
-              username: group.name || group.group_name || '未知用户组',
-              phone: group.phone || group.contact || '',
-              email: group.email || group.contact_email || '',
-              is_frozen: group.is_frozen || false,
-              created_at: group.created_at || group.createdAt || new Date().toISOString()
-            },
-            user_roles: group.roles || ['用户组'],
-            user_groups: [group.name || group.group_name]
-          }));
-          
-          setUsersData({
-            total: userGroupsResponse.total || userGroupsResponse.content.length,
-            content: convertedUsers,
-            pageable: {
-              sort: { orders: [] },
-              pageNumber: currentPage,
-              pageSize: pageSize,
-            },
-          });
+          setUsersData(usersResponse);
           return;
         } else {
-          console.log('❌ 用户组API返回数据格式不正确，尝试模拟API');
+          console.log('❌ 用户列表API返回数据格式不正确，尝试模拟API');
           console.log('🔍 响应结构:', {
-            hasResponse: !!userGroupsResponse,
-            hasContent: !!(userGroupsResponse && userGroupsResponse.content)
+            hasResponse: !!usersResponse,
+            hasContent: !!(usersResponse && usersResponse.content)
           });
+          console.log('🔍 完整响应:', usersResponse);
         }
       } catch (realApiError) {
-        console.log('❌ 用户组API调用失败，尝试模拟API:', realApiError);
+        console.log('❌ 用户列表API调用失败，尝试模拟API:', realApiError);
         console.log('🔍 错误详情:', {
           name: realApiError instanceof Error ? realApiError.name : 'Unknown',
           message: realApiError instanceof Error ? realApiError.message : String(realApiError),
@@ -488,7 +467,7 @@ export default function ClassDetailPage() {
       
       // 最后使用模拟数据作为后备
       console.log('使用本地模拟数据作为后备');
-      setUsersData({
+      const fallbackData = {
         total: mockStudents.length,
         content: mockStudents.map(student => ({
           user: {
@@ -507,10 +486,13 @@ export default function ClassDetailPage() {
           pageNumber: 0,
           pageSize: 10,
         },
-      });
+      };
+      
+      console.log('🔍 设置后备数据:', fallbackData);
+      setUsersData(fallbackData);
     } catch (error) {
       console.error('无法加载用户列表，使用模拟数据:', error);
-      setUsersData({
+      const errorFallbackData = {
         total: mockStudents.length,
         content: mockStudents.map(student => ({
           user: {
@@ -529,7 +511,10 @@ export default function ClassDetailPage() {
           pageNumber: 0,
           pageSize: 10,
         },
-      });
+      };
+      
+      console.log('🔍 设置错误后备数据:', errorFallbackData);
+      setUsersData(errorFallbackData);
     } finally {
       setUsersLoading(false);
     }
