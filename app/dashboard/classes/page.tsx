@@ -45,6 +45,7 @@ import {
 } from 'lucide-react';
 import { useUserStore } from '@/lib/stores/user-store';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Breadcrumb } from '@/components/breadcrumb';
 
 // 班级表单验证模式
 const classFormSchema = z.object({
@@ -320,23 +321,27 @@ export default function ClassesPage() {
 
   return (
     <>
-      <div className='flex h-16 items-center border-b px-4'>
+      <div className='flex h-16 items-center border-b bg-gradient-to-r from-green-50 to-emerald-50 px-4 shadow-sm'>
         <SidebarTrigger />
       </div>
-      <div className='w-full max-w-7xl mx-auto space-y-6 p-6'>
+      <div className='min-h-screen bg-gradient-to-br from-gray-50 via-green-50/30 to-emerald-50/30 w-full max-w-7xl mx-auto space-y-6 p-6'>
+        {/* 面包屑导航 */}
+        <div className='mb-4'>
+          <Breadcrumb />
+        </div>
         {/* 页面标题 */}
         <div className='space-y-2'>
-          <h1 className='text-2xl font-bold text-gray-900'>
+          <h1 className='text-4xl font-bold gradient-text-green tracking-tight'>
             {isCarbon ? '超级班级管理' : '班级管理'}
           </h1>
-          <p className='text-gray-600'>
+          <p className='text-gray-600 text-lg'>
             {isCarbon ? '您拥有超级权限，可以查看和管理所有班级信息' : '管理班级信息，分配学生，查看统计'}
           </p>
         </div>
 
         {/* 搜索和添加区域 */}
-        <Card>
-          <CardContent className='p-6'>
+        <Card className='shadow-lg border-0 bg-white/80 backdrop-blur-sm'>
+          <CardContent className='p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg'>
             <div className='flex justify-between items-center gap-4'>
               {/* 搜索区域 */}
               <div className='flex items-center gap-2 flex-1'>
@@ -510,31 +515,31 @@ export default function ClassesPage() {
                 <div className='text-lg'>加载中...</div>
               </div>
             ) : (
-              <Table>
+              <Table className='border-0'>
                 <TableHeader>
-                  <TableRow className='bg-gray-50'>
-                    <TableHead className='font-medium text-gray-700'>
+                  <TableRow className='bg-gradient-to-r from-green-50 to-emerald-50 border-0'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       班级名称
                     </TableHead>
-                    <TableHead className='font-medium text-gray-700'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       描述
                     </TableHead>
-                    <TableHead className='font-medium text-gray-700'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       年级
                     </TableHead>
-                    <TableHead className='font-medium text-gray-700'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       学生数
                     </TableHead>
-                    <TableHead className='font-medium text-gray-700'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       状态
                     </TableHead>
-                    <TableHead className='font-medium text-gray-700'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       创建日期
                     </TableHead>
-                    <TableHead className='font-medium text-gray-700'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       备注
                     </TableHead>
-                    <TableHead className='font-medium text-gray-700'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       操作
                     </TableHead>
                   </TableRow>
@@ -551,7 +556,7 @@ export default function ClassesPage() {
                     </TableRow>
                   ) : (
                     paginatedClasses.map(cls => (
-                      <TableRow key={cls.id} className='hover:bg-gray-50'>
+                      <TableRow key={cls.id} className='hover:bg-green-50/50 transition-colors duration-200 border-0'>
                         <TableCell className='font-medium'>
                           {cls.name}
                         </TableCell>
@@ -580,7 +585,7 @@ export default function ClassesPage() {
                               variant='ghost'
                               size='sm'
                               onClick={() => handleViewDetail(cls)}
-                              className='h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                              className='h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200 hover:scale-105'
                               title='查看详情'
                             >
                               <Eye className='h-4 w-4' />
@@ -589,7 +594,7 @@ export default function ClassesPage() {
                               variant='ghost'
                               size='sm'
                               onClick={() => handleDeleteClick(cls)}
-                              className='h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50'
+                              className='h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 hover:scale-105'
                               title='删除'
                             >
                               <Trash2 className='h-4 w-4' />

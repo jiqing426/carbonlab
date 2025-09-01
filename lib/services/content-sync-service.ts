@@ -104,7 +104,7 @@ class ContentSyncService {
       title: file.fileName || file.title || '未命名文件',
       description: file.description || '',
       url: file.url || file.link || '#',
-      date: file.createdAt || file.uploadDate || new Date().toISOString(),
+      date: file.displayTime || file.createdAt || file.uploadDate || new Date().toISOString(),
       source: repository.folderName || '未知来源',
       type: this.mapFileTypeToContentType(repository.controlTarget),
       repositoryId: repository.id
@@ -219,6 +219,73 @@ class ContentSyncService {
     } catch (error) {
       console.error(`Failed to get ${pageType} content:`, error);
       return [];
+    }
+  }
+
+  // 专门获取数据洞察内容（对应repo_003）
+  async getDataInsightContent(): Promise<ContentItem[]> {
+    try {
+      // 直接从repo_003获取文件
+      const files = this.getRepositoryFiles('repo_003');
+      const repository = {
+        id: 'repo_003',
+        folderName: '数据洞察',
+        controlTarget: 'global-data'
+      };
+      
+      return this.convertFilesToContentItems(files, repository as any);
+    } catch (error) {
+      console.error('Failed to get data insight content:', error);
+      return [];
+    }
+  }
+
+  // 更新文件显示时间
+  async updateFileDisplayTime(repositoryId: string, fileId: string, displayTime: string): Promise<boolean> {
+    try {
+      const response = await fetch('/api/update-file-time', {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          repositoryId,
+          fileId,
+          displayTime
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('更新文件显示时间失败:', errorData.error);
+        return false;
+      }
+
+      const result = await response.json();
+      console.log('文件显示时间更新成功:', result);
+      return true;
+    } catch (error) {
+      console.error('更新文件显示时间失败:', error);
+      return false;
+    }
+  }
+
+  // 获取文件显示时间
+  async getFileDisplayTime(repositoryId: string, fileId: string): Promise<string | null> {
+    try {
+      const response = await fetch(`/api/update-file-time?repositoryId=${repositoryId}&fileId=${fileId}`);
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('获取文件显示时间失败:', errorData.error);
+        return null;
+      }
+
+      const result = await response.json();
+      return result.data.displayTime;
+    } catch (error) {
+      console.error('获取文件显示时间失败:', error);
+      return null;
     }
   }
 }

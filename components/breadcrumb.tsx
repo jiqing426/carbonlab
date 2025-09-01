@@ -22,13 +22,19 @@ export function Breadcrumb() {
       
       // 特殊处理一些路径
       if (segments[i] === 'dashboard') {
-        title = '仪表板'
+        title = '个人中心'
       } else if (segments[i] === 'users') {
         title = '用户管理'
       } else if (segments[i] === 'roles') {
         title = '角色管理'
       } else if (segments[i] === 'home') {
         title = '首页'
+      } else if (segments[i] === 'resources') {
+        title = '资料库管理'
+      } else if (segments[i] === 'classes') {
+        title = '班级管理'
+      } else if (segments[i] === 'my-classes') {
+        title = '我的班级'
       }
       
       breadcrumbs.push({

@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/breadcrumb"
 import Link from "next/link"
 import { Globe, Database, Search, FileText } from "lucide-react"
+import { useState, useEffect } from "react"
 
 // 报告数据分类
 const reportCategories = [
@@ -149,6 +150,57 @@ const reportSites = [
 ]
 
 export default function ReportsPage() {
+  const [dynamicReportCategories, setDynamicReportCategories] = useState(reportCategories);
+  const [loading, setLoading] = useState(true);
+
+  // 从资料库加载研究报告数据
+  useEffect(() => {
+    const loadReports = async () => {
+      try {
+        // 动态导入内容同步服务
+        const { contentSyncService } = await import('@/lib/services/content-sync-service');
+        
+        // 获取研究报告数据
+        const reports = await contentSyncService.getPageContent('chinaReports');
+        
+        if (reports.length > 0) {
+          // 更新中国报告分类的数据
+          const updatedCategories = reportCategories.map(category => {
+            if (category.id === 'china') {
+              return {
+                ...category,
+                datasets: reports.map(report => ({
+                  title: report.title,
+                  url: report.url || '/dashboard/resources/repo_004',
+                  description: report.description || '暂无描述'
+                }))
+              };
+            }
+            return category;
+          });
+          setDynamicReportCategories(updatedCategories);
+        }
+      } catch (error) {
+        console.error('Failed to load reports:', error);
+        // 保持默认数据
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadReports();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-20 py-12">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">加载中...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-20 py-12">
       {/* 面包屑导航 */}
@@ -174,7 +226,7 @@ export default function ReportsPage() {
         </div>
       </div>
       <div className="space-y-10">
-        {reportCategories.map((category) => (
+        {dynamicReportCategories.map((category) => (
           <Card key={category.id} className="overflow-hidden">
             <CardHeader className="bg-gray-50 border-b">
               <div className="flex items-center gap-2">

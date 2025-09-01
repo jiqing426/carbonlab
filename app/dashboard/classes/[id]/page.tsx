@@ -89,15 +89,23 @@ interface Student {
 
 // 真实用户接口 - 从API获取的用户数据结构
 interface ApiUser {
-  user: {
-    user_id: string;
-    username: string;
-    phone: string;
+  user?: {
+    user_id?: string;
+    username?: string;
+    phone?: string;
     email?: string;
     is_frozen?: boolean;
     created_at?: string;
   };
-  user_roles: string[];
+  // 直接属性（兼容不同的API响应格式）
+  user_id?: string;
+  username?: string;
+  phone?: string;
+  email?: string;
+  is_frozen?: boolean;
+  created_at?: string;
+  id?: string;
+  user_roles?: string[];
   user_groups?: any[];
 }
 
@@ -380,93 +388,52 @@ export default function ClassDetailPage() {
   const loadUsers = useCallback(async () => {
     setUsersLoading(true);
     try {
-      console.log('Loading users from real API...');
+      console.log('Loading users from API...');
       
-      // 优先使用真实API获取用户组列表
-      try {
-        console.log('🔍 开始尝试调用真实用户组API...');
-        
-        // 获取应用token
-        const appToken = await getAppToken();
-        console.log('🔍 获取到的应用token:', appToken ? appToken.substring(0, 20) + '...' : 'null');
-        
-        if (!appToken) {
-          console.log('❌ 无法获取应用token，尝试模拟API');
-          throw new Error('No app token available');
+      // 调用用户列表API
+      const usersResponse = await getUsers({
+        page: currentPage,
+        size: pageSize,
+      }, 'oa_HBamFxnA');
+      
+      if (usersResponse && usersResponse.content) {
+        console.log('✅ 成功加载用户列表:', usersResponse.content.length, '个用户');
+        console.log('🔍 用户数据结构分析:');
+        console.log('🔍 第一个用户对象:', usersResponse.content[0]);
+        console.log('🔍 第一个用户的键名:', Object.keys(usersResponse.content[0]));
+        if (usersResponse.content[0].user) {
+          console.log('🔍 第一个用户的user对象:', usersResponse.content[0].user);
+          console.log('🔍 user对象的键名:', Object.keys(usersResponse.content[0].user));
         }
-        
-        console.log('🔍 准备调用getUserGroups函数，参数:', { page: currentPage, size: pageSize });
-        
-        // 调用用户列表API
-        const usersResponse = await getUsers({
-          page: currentPage,
-          size: pageSize,
-        }, 'oa_HBamFxnA');
-        
-        console.log('🔍 用户列表API响应:', usersResponse);
-        
-        if (usersResponse && usersResponse.content) {
-          console.log('✅ 成功从真实API加载用户列表:', usersResponse.content.length, '个用户');
-          console.log('🔍 用户数据示例:', usersResponse.content[0]);
-          
-          setUsersData(usersResponse);
-          return;
-        } else {
-          console.log('❌ 用户列表API返回数据格式不正确，尝试模拟API');
-          console.log('🔍 响应结构:', {
-            hasResponse: !!usersResponse,
-            hasContent: !!(usersResponse && usersResponse.content)
-          });
-          console.log('🔍 完整响应:', usersResponse);
-        }
-      } catch (realApiError) {
-        console.log('❌ 用户列表API调用失败，尝试模拟API:', realApiError);
-        console.log('🔍 错误详情:', {
-          name: realApiError instanceof Error ? realApiError.name : 'Unknown',
-          message: realApiError instanceof Error ? realApiError.message : String(realApiError),
-          stack: realApiError instanceof Error ? realApiError.stack : 'No stack trace'
-        });
+        setUsersData(usersResponse);
+      } else {
+        console.log('❌ API返回数据格式不正确，使用模拟数据');
+        // 使用模拟数据作为后备
+        const fallbackData = {
+          total: mockStudents.length,
+          content: mockStudents.map(student => ({
+            user: {
+              user_id: student.id,
+              username: student.username,
+              phone: student.phone,
+              email: student.email,
+              is_frozen: student.accountStatus === 'frozen',
+              created_at: student.joinDate
+            },
+            user_roles: ['学生'],
+            user_groups: []
+          })),
+          pageable: {
+            sort: { orders: [] },
+            pageNumber: 0,
+            pageSize: 10,
+          },
+        };
+        setUsersData(fallbackData);
       }
-      
-      // 如果真实API失败，尝试使用模拟API接口
-      try {
-        const response = await fetch('/api/mock-users?page=0&size=100');
-        
-        if (response.ok) {
-          const result = await response.json();
-          if (result.data && result.data.content) {
-            const apiUsers = result.data.content.map((user: any) => ({
-              user: {
-                user_id: user.user_id || user.id,
-                username: user.username,
-                phone: user.phone || '',
-                email: user.email || '',
-                is_frozen: user.is_frozen || false,
-                created_at: user.created_at || new Date().toISOString()
-              },
-              user_roles: user.user_roles || ['学生'],
-              user_groups: user.user_groups || []
-            }));
-            
-            setUsersData({
-              total: apiUsers.length,
-              content: apiUsers,
-              pageable: {
-                sort: { orders: [] },
-                pageNumber: 0,
-                pageSize: apiUsers.length,
-              },
-            });
-            console.log('✅ 成功从模拟API加载用户列表');
-            return;
-          }
-        }
-      } catch (mockApiError) {
-        console.log('模拟API也失败，使用本地模拟数据');
-      }
-      
-      // 最后使用模拟数据作为后备
-      console.log('使用本地模拟数据作为后备');
+    } catch (error) {
+      console.error('加载用户列表失败，使用模拟数据:', error);
+      // 使用模拟数据作为后备
       const fallbackData = {
         total: mockStudents.length,
         content: mockStudents.map(student => ({
@@ -487,34 +454,7 @@ export default function ClassDetailPage() {
           pageSize: 10,
         },
       };
-      
-      console.log('🔍 设置后备数据:', fallbackData);
       setUsersData(fallbackData);
-    } catch (error) {
-      console.error('无法加载用户列表，使用模拟数据:', error);
-      const errorFallbackData = {
-        total: mockStudents.length,
-        content: mockStudents.map(student => ({
-          user: {
-            user_id: student.id,
-            username: student.username,
-            phone: student.phone,
-            email: student.email,
-            is_frozen: student.accountStatus === 'frozen',
-            created_at: student.joinDate
-          },
-          user_roles: ['学生'],
-          user_groups: []
-        })),
-        pageable: {
-          sort: { orders: [] },
-          pageNumber: 0,
-          pageSize: 10,
-        },
-      };
-      
-      console.log('🔍 设置错误后备数据:', errorFallbackData);
-      setUsersData(errorFallbackData);
     } finally {
       setUsersLoading(false);
     }
@@ -609,18 +549,19 @@ export default function ClassDetailPage() {
 
     try {
       // 从用户数据中找到选中的用户
-      const newUsers = usersData.content.filter((user: ApiUser) => 
-        newStudentIds.includes(user.user.user_id)
-      );
+      const newUsers = usersData.content.filter((user: any) => {
+        const userId = user.user?.user_id || user.user?.id || user.id;
+        return userId && newStudentIds.includes(userId);
+      });
       
       // 转换为学生格式
-      const newStudents: Student[] = newUsers.map((user: ApiUser) => ({
-        id: user.user.user_id,
-        username: user.user.username || '未知用户',
-        phone: user.user.phone || '未知',
-        email: user.user.email,
-        joinDate: user.user.created_at 
-          ? new Date(user.user.created_at).toLocaleDateString('zh-CN')
+      const newStudents: Student[] = newUsers.map((user: any) => ({
+        id: user.user?.user_id || user.user?.id || user.id || '',
+        username: user.user?.username || user.username || '未知用户',
+        phone: user.user?.phone || user.phone || '未知',
+        email: user.user?.email || user.email,
+        joinDate: user.user?.created_at || user.created_at
+          ? new Date(user.user?.created_at || user.created_at).toLocaleDateString('zh-CN')
           : new Date().toLocaleDateString('zh-CN'),
         learningStatus: 'studying', // 新加入班级的用户默认为在学状态
         accountStatus: 'normal' // 新加入班级的用户默认为正常账号状态
@@ -656,14 +597,22 @@ export default function ClassDetailPage() {
   };
 
   // 转换用户数据格式
-  const transformedUsers = usersData.content.map((apiUser: ApiUser) => ({
-    id: apiUser.user.user_id,
-    username: apiUser.user.username || '',
-    phone: apiUser.user.phone || '',
-    role: apiUser.user_roles.length > 0 ? apiUser.user_roles[0] : '用户',
-    // 添加用户组信息
-    userGroups: apiUser.user_groups || [],
-  }));
+  const transformedUsers = usersData.content.map((apiUser: any) => {
+    // 添加安全检查
+    if (!apiUser || !apiUser.user) {
+      console.warn('跳过无效的用户数据:', apiUser);
+      return null;
+    }
+    
+    return {
+      id: apiUser.user.user_id || apiUser.user.id || apiUser.id || '',
+      username: apiUser.user.username || apiUser.username || '未知用户',
+      phone: apiUser.user.phone || apiUser.phone || '',
+      role: (apiUser.user_roles && apiUser.user_roles.length > 0) ? apiUser.user_roles[0] : '用户',
+      // 添加用户组信息
+      userGroups: apiUser.user_groups || [],
+    };
+  }).filter(Boolean); // 过滤掉null值
 
   // 前端搜索过滤
   const filteredUsers = transformedUsers.filter((user: { id: string; username: string; phone: string; role: string; userGroups: any[] }) => {

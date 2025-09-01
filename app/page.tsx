@@ -15,6 +15,7 @@ import { Card } from "@/components/ui/card"
 import { ChevronUp } from "lucide-react"
 import { ExperimentLink, FeatureLink } from "@/components/ui/feature-link"
 import { toast } from "sonner"
+import { useRouter } from "next/navigation"
 
 // 获取模块背景样式
 const getModuleBgClass = (module: string) => {
@@ -166,7 +167,7 @@ const newsCarouselData = [
     desc: "该意见提出了完善能源绿色低碳转型体制机制和政策措施的总体要求、主要任务和保障措施，为实现碳达峰碳中和目标提供了重要支撑。",
     date: "2025-07-15",
     source: "国家发改委",
-    url: "#"
+    url: "/dashboard/resources/repo_002"
   },
   {
     img: "https://picsum.photos/800/400?random=2",
@@ -176,59 +177,84 @@ const newsCarouselData = [
     desc: "本文详细解读了《碳排放权交易管理办法（试行）》修订版的主要变化，分析了其对企业的影响，并提出了相应的应对策略。",
     date: "2025-07-10",
     source: "碳中和研究院",
-    url: "#"
+    url: "/dashboard/resources/repo_001"
+  },
+  {
+    img: "https://picsum.photos/800/400?random=3",
+    tag: "研究报告",
+    tagColor: "bg-purple-600",
+    title: "2025年中国碳市场发展报告：机遇与挑战并存",
+    desc: "报告分析了2025年中国碳市场的发展现状，预测了未来发展趋势，为企业参与碳市场提供了重要参考。",
+    date: "2025-07-08",
+    source: "中国碳市场研究院",
+    url: "/dashboard/resources/repo_003"
   }
 ]
 
 // 默认内容数据
 const defaultLatestPolicies = [
-  { title: "生态环境部发布《关于做好2025年碳排放权交易市场数据质量监督管理相关工作的通知》", date: "2025-07-18", source: "生态环境部", url: "#" },
-  { title: "工信部：加快推进工业领域碳达峰碳中和，大力发展绿色制造", date: "2025-07-16", source: "工业和信息化部", url: "#" },
-  { title: "财政部：加大对绿色低碳产业的财政支持力度，完善相关财税政策", date: "2025-07-12", source: "财政部", url: "#" },
-  { title: "《中国碳达峰碳中和进展报告（2025）》正式发布", date: "2025-07-08", source: "国务院发展研究中心", url: "#" },
-  { title: "国家能源局：2025年非化石能源占能源消费总量比重提高到18%左右", date: "2025-07-05", source: "国家能源局", url: "#" },
+  { title: "生态环境部发布《关于做好2025年碳排放权交易市场数据质量监督管理相关工作的通知》", desc: "加强碳排放权交易市场数据质量管理，确保数据真实、准确、完整", date: "2025-07-18", source: "生态环境部", url: "/dashboard/resources/repo_002" },
+  { title: "工信部：加快推进工业领域碳达峰碳中和，大力发展绿色制造", desc: "推动工业绿色低碳转型，构建绿色制造体系，实现工业领域碳达峰碳中和目标", date: "2025-07-16", source: "工业和信息化部", url: "/dashboard/resources/repo_001" },
+  { title: "财政部：加大对绿色低碳产业的财政支持力度，完善相关财税政策", desc: "通过财政政策引导和支持绿色低碳产业发展，推动经济绿色转型", date: "2025-07-12", source: "财政部", url: "/dashboard/resources/repo_003" },
+  { title: "《中国碳达峰碳中和进展报告（2025）》正式发布", desc: "全面分析中国碳达峰碳中和进展，为政策制定提供科学依据", date: "2025-07-08", source: "国务院发展研究中心", url: "/dashboard/resources/repo_002" },
+  { title: "国家能源局：2025年非化石能源占能源消费总量比重提高到18%左右", desc: "加快能源结构调整，提高非化石能源比重，推动能源绿色低碳转型", date: "2025-07-05", source: "国家能源局", url: "/dashboard/resources/repo_001" },
 ];
 
 const defaultHotNews = [
-  { title: "全球碳市场发展趋势与中国碳市场建设研讨会在京召开", url: "#" },
-  { title: "首批国家级绿色供应链管理企业名单公布，多家企业入选", url: "#" },
-  { title: "全国碳市场上线交易一周年：累计成交额突破200亿元", url: "#" },
-  { title: "中国首单绿色资产支持商业票据（ABCP）成功发行", url: "#" },
-  { title: "多部门联合发布《关于促进新时代新能源高质量发展的实施方案》", url: "#" },
+  { title: "全球碳市场发展趋势与中国碳市场建设研讨会在京召开", desc: "深入探讨全球碳市场发展经验，为中国碳市场建设提供借鉴", url: "/dashboard/resources/repo_003" },
+  { title: "首批国家级绿色供应链管理企业名单公布，多家企业入选", desc: "推动企业绿色供应链管理，促进产业链绿色化转型", url: "/dashboard/resources/repo_002" },
+  { title: "全国碳市场上线交易一周年：累计成交额突破200亿元", desc: "碳市场运行平稳，交易活跃，为碳减排提供重要支撑", url: "/dashboard/resources/repo_001" },
+  { title: "中国首单绿色资产支持商业票据（ABCP）成功发行", desc: "创新绿色金融产品，拓宽绿色项目融资渠道", url: "/dashboard/resources/repo_003" },
+  { title: "多部门联合发布《关于促进新时代新能源高质量发展的实施方案》", desc: "推动新能源产业高质量发展，构建清洁低碳、安全高效的能源体系", url: "/dashboard/resources/repo_002" },
 ];
-const reportCovers = [
-  { img: "https://picsum.photos/300/400?random=3", title: "2025中国碳市场年度发展报告", date: "2025-06-30" },
-  { img: "https://picsum.photos/300/400?random=4", title: "重点行业碳排放核算与报告指南", date: "2025-06-15" },
-  { img: "https://picsum.photos/300/400?random=5", title: "企业碳中和路径与实践案例研究", date: "2025-05-28" },
-  { img: "https://picsum.photos/300/400?random=6", title: "区域碳达峰碳中和实施路径研究", date: "2025-05-10" },
+// 研究报告数据将从资料库动态加载
+const defaultReportCovers = [
+  { img: "https://picsum.photos/300/400?random=3", title: "2025中国碳市场年度发展报告", date: "2025-06-30", url: "/dashboard/resources/repo_004" },
+  { img: "https://picsum.photos/300/400?random=4", title: "重点行业碳排放核算与报告指南", date: "2025-06-15", url: "/dashboard/resources/repo_004" },
+  { img: "https://picsum.photos/300/400?random=5", title: "企业碳中和路径与实践案例研究", date: "2025-05-28", url: "/dashboard/resources/repo_004" },
+  { img: "https://picsum.photos/300/400?random=6", title: "区域碳达峰碳中和实施路径研究", date: "2025-05-10", url: "/dashboard/resources/repo_004" },
 ]
-const dataCards = [
-  { label: "全国碳市场", value: "2.15 亿吨", trend: "较上月增长 3.2%", bg: "bg-gradient-to-br from-blue-50 to-indigo-50", icon: <BarChart3 className="h-5 w-5" />, iconBg: "bg-blue-100", iconColor: "text-blue-600" },
-  { label: "可再生能源", value: "42.8%", trend: "占比创新高", bg: "bg-gradient-to-br from-green-50 to-teal-50", icon: <Globe className="h-5 w-5" />, iconBg: "bg-green-100", iconColor: "text-green-600" },
-  { label: "绿色债券", value: "8,765 亿元", trend: "同比增长 21.3%", bg: "bg-gradient-to-br from-orange-50 to-amber-50", icon: <FileText className="h-5 w-5" />, iconBg: "bg-amber-100", iconColor: "text-amber-500" },
-  { label: "碳足迹认证", value: "1,243 家", trend: "新增 156 家", bg: "bg-gradient-to-br from-purple-50 to-pink-50", icon: <ChevronUp className="h-5 w-5" />, iconBg: "bg-purple-100", iconColor: "text-purple-500" },
-]
-const latestData = [
-  { title: "2025年6月全国及各省区市能源生产情况", desc: "原煤、原油、天然气生产及发电情况", tag: "最新发布", date: "2025-07-18", source: "国家统计局", url: "#" },
-  { title: "重点行业碳排放监测周报（7.10-7.16）", desc: "钢铁、电力、建材等行业碳排放数据", tag: "监测数据", date: "2025-07-17", source: "生态环境部", url: "#" },
-  { title: "2025年第二季度中国碳价指数报告", desc: "全国及区域碳市场价格走势分析", tag: "研究报告", date: "2025-07-15", source: "清华大学能源环境经济研究所", url: "#" },
-  { title: "中国绿色金融发展报告（2025年上半年）", desc: "绿色信贷、绿色债券、碳金融等发展情况", tag: "行业报告", date: "2025-07-10", source: "中国人民银行", url: "#" },
+
+const defaultLatestData = [
+  { title: "2025年6月全国及各省区市能源生产情况", desc: "原煤、原油、天然气生产及发电情况", tag: "最新发布", date: "2025-07-18", source: "国家统计局", url: "/dashboard/resources/repo_001" },
+  { title: "重点行业碳排放监测周报（7.10-7.16）", desc: "钢铁、电力、建材等行业碳排放数据", tag: "监测数据", date: "2025-07-17", source: "生态环境部", url: "/dashboard/resources/repo_002" },
+  { title: "2025年第二季度中国碳价指数报告", desc: "全国及区域碳市场价格走势分析", tag: "研究报告", date: "2025-07-15", source: "清华大学能源环境经济研究所", url: "/dashboard/resources/repo_003" },
+  { title: "中国绿色金融发展报告（2025年上半年）", desc: "绿色信贷、绿色债券、碳金融等发展情况", tag: "行业报告", date: "2025-07-10", source: "中国人民银行", url: "/dashboard/resources/repo_001" },
+  { title: "全国碳市场配额分配方案（2025-2026）", desc: "钢铁、水泥、化工等行业配额分配标准", tag: "政策文件", date: "2025-07-08", source: "生态环境部", url: "/dashboard/resources/repo_002" },
 ]
 
 function NewsCarousel() {
   const [current, setCurrent] = useState(0)
+  const router = useRouter()
+  
   useEffect(() => {
     const timer = setInterval(() => setCurrent((prev) => (prev + 1) % newsCarouselData.length), 5000)
     return () => clearInterval(timer)
   }, [])
+  
+  const handleNewsClick = (url: string) => {
+    if (url && url !== '#') {
+      // 如果是外部链接，直接跳转
+      if (url.startsWith('http')) {
+        window.open(url, '_blank')
+      } else {
+        // 如果是内部链接，使用router跳转
+        router.push(url)
+      }
+    }
+  }
+  
   return (
     <div className="lg:col-span-2 relative rounded-xl overflow-hidden shadow-md h-[400px]">
       {newsCarouselData.map((item, idx) => (
         <div key={idx} className={`carousel-item absolute inset-0 transition-opacity duration-1000 ${current === idx ? 'opacity-100 z-10' : 'opacity-0 z-0'}`}>
           <img src={item.img} alt={item.title} className="w-full h-full object-cover" />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6">
+          <div 
+            className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex flex-col justify-end p-6 cursor-pointer hover:from-black/80 transition-all duration-300"
+            onClick={() => handleNewsClick(item.url)}
+          >
             <span className={`text-white text-xs px-3 py-1 rounded-full inline-block mb-3 w-fit ${item.tagColor}`}>{item.tag}</span>
-            <h3 className="text-xl font-bold text-white mb-2">{item.title}</h3>
+            <h3 className="text-xl font-bold text-white mb-2 hover:text-blue-200 transition-colors">{item.title}</h3>
             <p className="text-white/80 text-sm mb-3 line-clamp-2">{item.desc}</p>
             <div className="flex items-center text-white/60 text-xs">
               <span>{item.date}</span>
@@ -248,7 +274,7 @@ function NewsCarousel() {
       <button onClick={() => setCurrent((current - 1 + newsCarouselData.length) % newsCarouselData.length)} className="carousel-control prev absolute top-1/2 left-4 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 text-white flex items-center justify-center hover:bg-blue-600 transition-colors z-20">
         <ChevronLeft className="h-5 w-5" />
       </button>
-      <button onClick={() => setCurrent((current + 1) % newsCarouselData.length)} className="carousel-control next absolute top-1/2 right-4 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 text-white flex items-center justify-center hover:bg-blue-600 transition-colors z-20">
+      <button onClick={() => setCurrent((current + 1 + newsCarouselData.length) % newsCarouselData.length)} className="carousel-control next absolute top-1/2 right-4 -translate-y-1/2 w-10 h-10 rounded-full bg-black/30 text-white flex items-center justify-center hover:bg-blue-600 transition-colors z-20">
         <ChevronRight className="h-5 w-5" />
       </button>
     </div>
@@ -256,6 +282,7 @@ function NewsCarousel() {
 }
 
 export default function Home() {
+  const router = useRouter();
   const [courses, setCourses] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentSlide, setCurrentSlide] = useState(0)
@@ -265,6 +292,8 @@ export default function Home() {
   // 从资料库同步的内容数据
   const [latestPolicies, setLatestPolicies] = useState(defaultLatestPolicies);
   const [hotNews, setHotNews] = useState(defaultHotNews);
+  const [latestData, setLatestData] = useState(defaultLatestData);
+  const [reportCovers, setReportCovers] = useState(defaultReportCovers);
 
   // 同步资料库内容
   useEffect(() => {
@@ -273,13 +302,16 @@ export default function Home() {
         // 动态导入内容同步服务
         const { contentSyncService } = await import('@/lib/services/content-sync-service');
         
-        // 同步最新政策和热点新闻
+        // 同步最新政策、热点新闻、最新数据和研究报告
         const policies = await contentSyncService.getPageContent('latestPolicies');
         const news = await contentSyncService.getPageContent('hotNews');
+        const data = await contentSyncService.getDataInsightContent();
+        const reports = await contentSyncService.getPageContent('chinaReports');
         
         if (policies.length > 0) {
           setLatestPolicies(policies.map(item => ({
             title: item.title,
+            desc: item.description || '暂无描述',
             date: item.date ? new Date(item.date).toLocaleDateString('zh-CN') : '未知日期',
             source: item.source || '未知来源',
             url: item.url || '#'
@@ -289,7 +321,28 @@ export default function Home() {
         if (news.length > 0) {
           setHotNews(news.map(item => ({
             title: item.title,
+            desc: item.description || '暂无描述',
             url: item.url || '#'
+          })));
+        }
+        
+        if (data.length > 0) {
+          setLatestData(data.map(item => ({
+            title: item.title,
+            desc: item.description || '暂无描述',
+            tag: '数据洞察',
+            date: item.date ? new Date(item.date).toLocaleDateString('zh-CN') : '未知日期',
+            source: item.source || '未知来源',
+            url: item.url || '#'
+          })));
+        }
+        
+        if (reports.length > 0) {
+          setReportCovers(reports.slice(0, 4).map(item => ({
+            img: "https://picsum.photos/300/400?random=" + Math.floor(Math.random() * 100),
+            title: item.title,
+            date: item.date ? new Date(item.date).toLocaleDateString('zh-CN') : '未知日期',
+            url: item.url || '/dashboard/resources/repo_004'
           })));
         }
       } catch (error) {
@@ -480,29 +533,6 @@ export default function Home() {
               <div className="flex justify-between items-center mb-4">
                 <h3 className="font-bold text-lg">最新政策</h3>
                 <div className="flex items-center gap-2">
-                  <button 
-                    onClick={async () => {
-                      try {
-                        const { contentSyncService } = await import('@/lib/services/content-sync-service');
-                        const policies = await contentSyncService.syncContentFromRepositories();
-                        if (policies.latestPolicies.length > 0) {
-                          setLatestPolicies(policies.latestPolicies.map(item => ({
-                            title: item.title,
-                            date: item.date ? new Date(item.date).toLocaleDateString('zh-CN') : '未知日期',
-                            source: item.source || '未知来源',
-                            url: item.url || '#'
-                          })));
-                          toast.success('内容同步成功！');
-                        }
-                      } catch (error) {
-                        console.error('Sync failed:', error);
-                        toast.error('内容同步失败');
-                      }
-                    }}
-                    className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded hover:bg-blue-200"
-                  >
-                    同步资料库
-                  </button>
                   <Link 
                     href="/news" 
                     className="text-blue-600 text-sm hover:underline"
@@ -516,6 +546,9 @@ export default function Home() {
                   <li key={idx} className="pb-4 border-b border-gray-100">
                     <a href={item.url} className="transition-all duration-300 hover:text-blue-600 hover:underline">
                       <h4 className="font-medium mb-1">{item.title}</h4>
+                      {item.desc && (
+                        <p className="text-sm text-gray-500 mb-2 line-clamp-2">{item.desc}</p>
+                      )}
                       <div className="flex justify-between items-center text-xs text-gray-400">
                         <span>{item.date}</span>
                         <span>{item.source}</span>
@@ -527,27 +560,6 @@ export default function Home() {
               <div className="flex justify-between items-center mt-8 mb-4">
                 <h3 className="font-bold text-lg">热点新闻</h3>
                 <div className="flex items-center gap-2">
-                  <button 
-                    onClick={async () => {
-                      try {
-                        const { contentSyncService } = await import('@/lib/services/content-sync-service');
-                        const news = await contentSyncService.syncContentFromRepositories();
-                        if (news.hotNews.length > 0) {
-                          setHotNews(news.hotNews.map(item => ({
-                            title: item.title,
-                            url: item.url || '#'
-                          })));
-                          toast.success('热点新闻同步成功！');
-                        }
-                      } catch (error) {
-                        console.error('Sync failed:', error);
-                        toast.error('热点新闻同步失败');
-                      }
-                    }}
-                    className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded hover:bg-green-200"
-                  >
-                    同步资料库
-                  </button>
                   <Link 
                     href="/news" 
                     className="text-blue-600 text-sm hover:underline"
@@ -561,7 +573,12 @@ export default function Home() {
                   <li key={idx}>
                     <a href={item.url} className="flex items-start transition-all duration-300 hover:text-blue-600 hover:underline">
                       <span className={`w-6 h-6 rounded-full flex items-center justify-center mr-3 flex-shrink-0 ${idx < 3 ? 'bg-blue-100 text-blue-600' : 'bg-gray-100 text-gray-400'} text-xs`}>{idx + 1}</span>
-                      <span>{item.title}</span>
+                      <div className="flex-1">
+                        <span className="font-medium">{item.title}</span>
+                        {item.desc && (
+                          <p className="text-sm text-gray-500 mt-1 line-clamp-2">{item.desc}</p>
+                        )}
+                      </div>
                     </a>
                   </li>
                 ))}
@@ -575,25 +592,48 @@ export default function Home() {
             </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* 左侧报告封面展示 */}
-              <div className="lg:col-span-1 bg-white rounded-xl shadow-sm p-6">
+              <div className="lg:col-span-1 bg-white rounded-xl shadow-sm p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-bold text-lg">研究报告</h3>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
-                  {reportCovers.map((report, idx) => (
-                    <div key={idx} className="rounded-lg overflow-hidden shadow card-hover">
-                      <div className="aspect-[3/4] bg-gray-100 relative">
-                        <img src={report.img} alt={report.title} className="w-full h-full object-cover" />
-                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
-                          <Button size="sm" className="bg-white text-blue-600 px-4 py-2 rounded-full text-sm font-medium">
-                            <FileText className="mr-1 h-4 w-4" /> 下载
-                          </Button>
+                <div className="flex-1">
+                  <div className="grid grid-cols-2 gap-4">
+                    {reportCovers.map((report, idx) => (
+                      <div 
+                        key={idx} 
+                        className="rounded-lg overflow-hidden shadow card-hover cursor-pointer"
+                        onClick={() => {
+                          if (report.url.startsWith('http')) {
+                            window.open(report.url, '_blank');
+                          } else {
+                            router.push(report.url);
+                          }
+                        }}
+                      >
+                        <div className="aspect-[3/4] bg-gray-100 relative">
+                          <img src={report.img} alt={report.title} className="w-full h-full object-cover" />
+                          <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                            <Button 
+                              size="sm" 
+                              className="bg-white text-blue-600 px-4 py-2 rounded-full text-sm font-medium"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                if (report.url.startsWith('http')) {
+                                  window.open(report.url, '_blank');
+                                } else {
+                                  router.push(report.url);
+                                }
+                              }}
+                            >
+                              <FileText className="mr-1 h-4 w-4" /> 查看
+                            </Button>
+                          </div>
                         </div>
+                        <h4 className="mt-2 text-sm font-medium line-clamp-2">{report.title}</h4>
+                        <p className="text-xs text-gray-400">{report.date}</p>
                       </div>
-                      <h4 className="mt-2 text-sm font-medium line-clamp-2">{report.title}</h4>
-                      <p className="text-xs text-gray-400">{report.date}</p>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
                 <div className="mt-6 flex justify-center">
                   <Link 
@@ -607,50 +647,42 @@ export default function Home() {
                 </div>
               </div>
               {/* 右侧数据条目 */}
-              <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6">
+              <div className="lg:col-span-2 bg-white rounded-xl shadow-sm p-6 flex flex-col">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="font-bold text-lg">数据洞察</h3>
-                  <Link 
-                    href="/datasets" 
-                    className="text-green-600 text-sm hover:underline"
-                  >
-                    更多
-                  </Link>
+                  <div className="flex items-center gap-2">
+                    <Link 
+                      href="/datasets" 
+                      className="text-green-600 text-sm hover:underline"
+                    >
+                      更多
+                    </Link>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  {dataCards.map((card, idx) => {
-                    return (
-                      <div key={idx} className={`rounded-lg p-4 card-hover flex flex-col justify-center items-center ${card.bg}`}> 
-                        <p className="text-gray-400 text-sm">{card.label}</p>
-                        <h4 className="text-2xl font-bold mt-1">{card.value}</h4>
-                        <p className="text-green-500 text-xs mt-1 flex items-center">
-                          <ChevronUp className="mr-1 h-3 w-3" />{card.trend}
-                        </p>
-                      </div>
-                    )
-                  })}
-                </div>
-                <div className="mb-6">
+
+                <div className="flex-1 overflow-hidden">
                   <h4 className="font-bold text-xl mb-4 flex items-center">
                     <BarChart3 className="text-green-600 mr-2 h-4 w-4" /> 最新数据发布
                   </h4>
-                  <ul className="space-y-4">
-                    {latestData.map((item, idx) => (
-                      <li key={idx} className="pb-3 border-b border-gray-100">
-                        <a href={item.url} className="flex justify-between items-start transition-all duration-300 hover:text-green-600 hover:underline">
-                          <div>
-                            <h5 className="font-medium">{item.title}</h5>
-                            <p className="text-sm text-gray-400 mt-1">{item.desc}</p>
+                  <div className="h-full overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                    <ul className="space-y-4">
+                      {latestData.map((item, idx) => (
+                        <li key={idx} className="pb-3 border-b border-gray-100">
+                          <a href={item.url} className="flex justify-between items-start transition-all duration-300 hover:text-green-600 hover:underline">
+                            <div>
+                              <h5 className="font-medium">{item.title}</h5>
+                              <p className="text-sm text-gray-400 mt-1">{item.desc}</p>
+                            </div>
+                            <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">{item.tag}</span>
+                          </a>
+                          <div className="flex justify-between items-center mt-2 text-xs text-gray-400">
+                            <span>{item.date}</span>
+                            <span>{item.source}</span>
                           </div>
-                          <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">{item.tag}</span>
-                        </a>
-                        <div className="flex justify-between items-center mt-2 text-xs text-gray-400">
-                          <span>{item.date}</span>
-                          <span>{item.source}</span>
-                        </div>
-                      </li>
-                    ))}
-                  </ul>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
                 {/* 可选：数据可视化区，可后续补充 */}
               </div>

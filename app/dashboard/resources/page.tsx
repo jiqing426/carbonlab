@@ -39,6 +39,7 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useUserStore } from '@/lib/stores/user-store';
+import { Breadcrumb } from '@/components/breadcrumb';
 
 // 资料库接口类型
 interface Repository {
@@ -160,7 +161,7 @@ const mockRepositories: Repository[] = [
 
 export default function ResourcesManagement() {
   const router = useRouter();
-  const { currentApp } = useUserStore();
+  const { user } = useUserStore();
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [showAddRepoDialog, setShowAddRepoDialog] = useState(false);
@@ -285,14 +286,23 @@ export default function ResourcesManagement() {
   };
 
   const handleDeleteRepository = async () => {
-    if (!deletingRepo) return;
+    if (!deletingRepo) {
+      toast.error('未选择要删除的资料库');
+      return;
+    }
 
     if (confirmRepoName !== deletingRepo.folderName) {
-      toast.error('输入的资料库名称不匹配');
+      toast.error('输入的资料库名称不匹配，请重新输入');
       return;
     }
 
     try {
+      // 显示删除进度
+      toast.loading('正在删除资料库...', { id: 'delete-repo' });
+      
+      // 模拟删除延迟，让用户感知到操作正在进行
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const updatedRepositories = repositories.filter(repo => repo.id !== deletingRepo.id);
       setRepositories(updatedRepositories);
       
@@ -302,12 +312,18 @@ export default function ResourcesManagement() {
       // 同时删除相关的文件数据
       localStorage.removeItem(`files_${deletingRepo.id}`);
       
+      // 关闭对话框并重置状态
       setIsDeleteDialogOpen(false);
       setDeletingRepo(null);
       setConfirmRepoName('');
-      toast.success('资料库删除成功');
+      
+      // 显示成功消息
+      toast.success(`资料库「${deletingRepo.folderName}」已成功删除`, { id: 'delete-repo' });
+      
+      // 重新加载数据以确保界面同步
+      loadRepositories();
     } catch (error) {
-      toast.error('删除资料库失败');
+      toast.error('删除资料库失败，请稍后重试', { id: 'delete-repo' });
       console.error('Failed to delete repository:', error);
     }
   };
@@ -328,15 +344,21 @@ export default function ResourcesManagement() {
 
   return (
     <>
-      <div className='flex h-16 items-center border-b px-4'>
+      <div className='flex h-16 items-center border-b bg-gradient-to-r from-blue-50 to-indigo-50 px-4 shadow-sm'>
         <SidebarTrigger />
       </div>
-      <div className='p-6'>
+      <div className='min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30 p-6'>
         <div className='max-w-7xl mx-auto'>
+          <div className='mb-6'>
+            <Breadcrumb />
+          </div>
           <div className='flex justify-between items-center mb-8'>
-            <h1 className='text-3xl font-bold text-foreground tracking-tight'>
-              资料库管理
-            </h1>
+            <div className='space-y-2'>
+              <h1 className='text-4xl font-bold gradient-text-blue tracking-tight'>
+                资料库管理
+              </h1>
+              <p className='text-gray-600 text-lg'>管理和组织您的学习资源</p>
+            </div>
           </div>
 
           {error && (
@@ -347,10 +369,13 @@ export default function ResourcesManagement() {
 
           <div className='w-full space-y-6'>
             {/* 头部区域 */}
-            <Card>
-              <CardHeader>
+            <Card className='shadow-lg border-0 bg-white/80 backdrop-blur-sm'>
+              <CardHeader className='bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg'>
                 <div className='flex items-center justify-between'>
-                  <CardTitle>资料库管理</CardTitle>
+                  <CardTitle className='text-xl font-semibold text-gray-800 flex items-center gap-2'>
+                    <FolderOpen className='h-5 w-5 text-blue-600' />
+                    资料库管理
+                  </CardTitle>
                   <Button
                     onClick={() => {
                       setNewRepo({
@@ -362,6 +387,7 @@ export default function ResourcesManagement() {
                       setShowAddRepoDialog(true);
                     }}
                     disabled={loading}
+                    className='bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105'
                   >
                     <Plus className='w-4 h-4 mr-2' />
                     添加资料库
@@ -371,9 +397,6 @@ export default function ResourcesManagement() {
               <CardContent>
                 <div className='flex gap-4 items-end'>
                   <div className='flex-1'>
-                    <label className='text-sm font-medium text-gray-700'>
-                      搜索资料库
-                    </label>
                     <div className='relative mt-1'>
                       <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4' />
                       <Input
@@ -396,25 +419,25 @@ export default function ResourcesManagement() {
                   <div className='text-lg'>加载中...</div>
                 </div>
               ) : (
-                <Table>
+                <Table className='border-0'>
                   <TableHeader>
-                    <TableRow className='bg-gray-50'>
-                      <TableHead className='font-semibold text-gray-900'>
+                    <TableRow className='bg-gradient-to-r from-blue-50 to-indigo-50 border-0'>
+                      <TableHead className='font-semibold text-gray-800 border-0'>
                         资料库名称
                       </TableHead>
-                      <TableHead className='font-semibold text-gray-900'>
+                      <TableHead className='font-semibold text-gray-800 border-0'>
                         支持类型
                       </TableHead>
-                      <TableHead className='font-semibold text-gray-900'>
+                      <TableHead className='font-semibold text-gray-800 border-0'>
                         控制目标
                       </TableHead>
-                      <TableHead className='font-semibold text-gray-900'>
+                      <TableHead className='font-semibold text-gray-800 border-0'>
                         创建时间
                       </TableHead>
-                      <TableHead className='font-semibold text-gray-900'>
+                      <TableHead className='font-semibold text-gray-800 border-0'>
                         备注
                       </TableHead>
-                      <TableHead className='font-semibold text-gray-900 text-right'>
+                      <TableHead className='font-semibold text-gray-800 text-right border-0'>
                         操作
                       </TableHead>
                     </TableRow>
@@ -433,7 +456,7 @@ export default function ResourcesManagement() {
                       </TableRow>
                     ) : (
                       filteredRepositories.map(repo => (
-                        <TableRow key={repo.id} className='hover:bg-gray-50'>
+                        <TableRow key={repo.id} className='hover:bg-blue-50/50 transition-colors duration-200 border-0'>
                           <TableCell>
                             <div className='flex items-center space-x-3'>
                               <FolderOpen className='w-5 h-5 text-blue-600' />
@@ -502,7 +525,7 @@ export default function ResourcesManagement() {
                                 variant='ghost'
                                 size='sm'
                                 onClick={() => handleViewRepository(repo)}
-                                className='h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                className='h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200 hover:scale-105'
                                 title='查看详情'
                               >
                                 <Edit className='h-4 w-4' />
@@ -511,8 +534,8 @@ export default function ResourcesManagement() {
                                 variant='ghost'
                                 size='sm'
                                 onClick={() => handleDeleteClick(repo)}
-                                className='h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50'
-                                title='删除'
+                                className='h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 hover:scale-105'
+                                title='删除资料库（需要二次确认）'
                               >
                                 <Trash2 className='h-4 w-4' />
                               </Button>
@@ -601,34 +624,55 @@ export default function ResourcesManagement() {
 
         {/* 删除确认对话框 */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent className='bg-background border-border'>
+          <DialogContent className='bg-background border-border max-w-md'>
             <DialogHeader>
-              <DialogTitle className='text-foreground'>
+              <DialogTitle className='text-foreground flex items-center gap-2'>
+                <Trash2 className='h-5 w-5 text-red-500' />
                 确认删除资料库
               </DialogTitle>
               <DialogDescription className='text-muted-foreground'>
-                此操作无法撤销。请输入资料库名称「{deletingRepo?.folderName}
-                」来确认删除。
+                <div className='space-y-2'>
+                  <p>⚠️ <strong>警告：此操作无法撤销！</strong></p>
+                  <p>删除资料库「<span className='font-semibold text-red-600'>{deletingRepo?.folderName}</span>」将会：</p>
+                  <ul className='list-disc list-inside text-sm space-y-1 ml-4'>
+                    <li>永久删除资料库及其所有文件</li>
+                    <li>清除相关的页面内容控制</li>
+                    <li>影响前端页面的数据展示</li>
+                  </ul>
+                  <p className='text-sm font-medium'>请输入资料库名称以确认删除：</p>
+                </div>
               </DialogDescription>
             </DialogHeader>
             <div className='space-y-4'>
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-foreground'>
-                  请输入资料库名称确认
+                  资料库名称
                 </label>
                 <Input
-                  placeholder='输入资料库名称'
+                  placeholder={`请输入「${deletingRepo?.folderName}」`}
                   value={confirmRepoName}
                   onChange={e => setConfirmRepoName(e.target.value)}
                   className='bg-background border-border'
+                  autoComplete='off'
                 />
+                {confirmRepoName && confirmRepoName !== deletingRepo?.folderName && (
+                  <p className='text-xs text-red-500'>名称不匹配，请重新输入</p>
+                )}
+                {confirmRepoName === deletingRepo?.folderName && (
+                  <p className='text-xs text-green-500'>✓ 名称匹配，可以删除</p>
+                )}
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className='gap-2'>
               <Button
                 type='button'
                 variant='outline'
-                onClick={() => setIsDeleteDialogOpen(false)}
+                onClick={() => {
+                  setIsDeleteDialogOpen(false);
+                  setDeletingRepo(null);
+                  setConfirmRepoName('');
+                }}
+                className='flex-1'
               >
                 取消
               </Button>
@@ -637,7 +681,9 @@ export default function ResourcesManagement() {
                 variant='destructive'
                 onClick={handleDeleteRepository}
                 disabled={confirmRepoName !== deletingRepo?.folderName}
+                className='flex-1'
               >
+                <Trash2 className='h-4 w-4 mr-2' />
                 确认删除
               </Button>
             </DialogFooter>
