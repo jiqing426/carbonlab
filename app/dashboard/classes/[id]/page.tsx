@@ -17,6 +17,11 @@ import {
   Edit,
   Save,
   XCircle,
+  RefreshCw,
+  Cloud,
+  CheckCircle,
+  XCircle as XCircleIcon,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -51,6 +56,7 @@ import { getUserGroups } from '@/lib/api/user-groups';
 import { useUserStore } from '@/lib/stores/user-store';
 import { useAppTokenStore } from '@/lib/stores/app-token-store';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { classSyncService, Class as ClassType } from '@/lib/services/class-sync-service';
 
 // 班级信息表单验证
 const classFormSchema = z.object({
@@ -74,6 +80,11 @@ interface Class {
   createdAt: string;
   status: 'ongoing' | 'completed' | 'pending';
   students: string[];
+  // 同步相关字段
+  taleGroupId?: string; // Tale 平台用户组 ID
+  lastSyncTime?: string; // 最后同步时间
+  syncStatus?: 'synced' | 'pending' | 'error'; // 同步状态
+  syncError?: string; // 同步错误信息
 }
 
 // 学生接口
@@ -161,6 +172,9 @@ export default function ClassDetailPage() {
   // 批量移除相关状态
   const [batchRemoveMode, setBatchRemoveMode] = useState(false);
   const [selectedStudentsForRemoval, setSelectedStudentsForRemoval] = useState<string[]>([]);
+  
+  // 同步相关状态
+  const [syncLoading, setSyncLoading] = useState(false);
 
   // 用户列表相关状态（用于添加学生）
   const [usersData, setUsersData] = useState<any>({
@@ -486,18 +500,52 @@ export default function ClassDetailPage() {
       const savedClasses = localStorage.getItem('carbonlab-classes');
       if (savedClasses) {
         const classes = JSON.parse(savedClasses);
+        const updatedClass: Class = { ...classInfo!, ...values };
         const updatedClasses = classes.map((cls: Class) => 
           cls.id === classId 
-            ? { ...cls, ...values }
+            ? updatedClass
             : cls
         );
         localStorage.setItem('carbonlab-classes', JSON.stringify(updatedClasses));
         
         // 更新本地状态
-        setClassInfo(prev => prev ? { ...prev, ...values } : null);
+        setClassInfo(updatedClass);
+        
+        // 如果班级已同步到 Tale 平台，自动同步更新
+        if (updatedClass.taleGroupId) {
+          try {
+            setSyncLoading(true);
+            const syncResult = await classSyncService.syncClassToTale(updatedClass);
+            
+            if (syncResult.success) {
+              // 更新同步信息
+              const finalClass = {
+                ...updatedClass,
+                lastSyncTime: syncResult.data?.lastSyncTime,
+                syncStatus: 'synced' as const
+              };
+              
+              const finalClasses = classes.map((cls: Class) => 
+                cls.id === classId ? finalClass : cls
+              );
+              localStorage.setItem('carbonlab-classes', JSON.stringify(finalClasses));
+              setClassInfo(finalClass);
+              
+              toast.success(`班级 "${values.name}" 已成功更新并同步到 Tale 平台。`);
+            } else {
+              toast.warning(`班级 "${values.name}" 更新成功，但同步到 Tale 平台失败：${syncResult.message}`);
+            }
+          } catch (syncError) {
+            console.error('同步失败:', syncError);
+            toast.warning(`班级 "${values.name}" 更新成功，但同步到 Tale 平台失败`);
+          } finally {
+            setSyncLoading(false);
+          }
+        } else {
+          toast.success(`班级 "${values.name}" 已成功更新。`);
+        }
       }
       
-      toast.success(`班级 "${values.name}" 已成功更新。`);
       setIsEditingClass(false);
       loadClassInfo(); // 重新加载班级信息
     } catch (error) {
@@ -575,18 +623,37 @@ export default function ClassDetailPage() {
       const savedClasses = localStorage.getItem('carbonlab-classes');
       if (savedClasses) {
         const classes = JSON.parse(savedClasses);
+        const updatedClass: Class = { 
+          ...classInfo!, 
+          students: updatedStudents.map(s => s.id), 
+          currentStudents: updatedStudents.length 
+        };
         const updatedClasses = classes.map((cls: Class) => 
-          cls.id === classId 
-            ? { ...cls, students: updatedStudents.map(s => s.id), currentStudents: updatedStudents.length }
-            : cls
+          cls.id === classId ? updatedClass : cls
         );
         localStorage.setItem('carbonlab-classes', JSON.stringify(updatedClasses));
         
         // 同步更新本地班级信息
-        setClassInfo(prev => prev ? { ...prev, currentStudents: updatedStudents.length } : null);
+        setClassInfo(updatedClass);
+        
+        // 如果班级已同步到 Tale 平台，自动同步学生变更
+        if (updatedClass.taleGroupId) {
+          try {
+            const syncResult = await classSyncService.syncClassToTale(updatedClass);
+            if (syncResult.success) {
+              toast.success(`已成功添加 ${newStudentIds.length} 个用户到班级并同步到 Tale 平台`);
+            } else {
+              toast.warning(`学生添加成功，但同步到 Tale 平台失败：${syncResult.message}`);
+            }
+          } catch (syncError) {
+            console.error('同步失败:', syncError);
+            toast.warning(`学生添加成功，但同步到 Tale 平台失败`);
+          }
+        } else {
+          toast.success(`已成功添加 ${newStudentIds.length} 个用户到班级`);
+        }
       }
       
-      toast.success(`已成功添加 ${newStudentIds.length} 个用户到班级`);
       setShowAddStudentSidebar(false);
       setCurrentPage(0);
       setUserSearchTerm('');
@@ -658,15 +725,30 @@ export default function ClassDetailPage() {
       const savedClasses = localStorage.getItem('carbonlab-classes');
       if (savedClasses) {
         const classes = JSON.parse(savedClasses);
+        const updatedClass: Class = { 
+          ...classInfo!, 
+          students: updatedStudents.map(s => s.id), 
+          currentStudents: updatedStudents.length 
+        };
         const updatedClasses = classes.map((cls: Class) => 
-          cls.id === classId 
-            ? { ...cls, students: updatedStudents.map(s => s.id), currentStudents: updatedStudents.length }
-            : cls
+          cls.id === classId ? updatedClass : cls
         );
         localStorage.setItem('carbonlab-classes', JSON.stringify(updatedClasses));
         
         // 同步更新本地班级信息
-        setClassInfo(prev => prev ? { ...prev, currentStudents: updatedStudents.length } : null);
+        setClassInfo(updatedClass);
+        
+        // 如果班级已同步到 Tale 平台，自动同步学生变更
+        if (updatedClass.taleGroupId) {
+          try {
+            const syncResult = await classSyncService.syncClassToTale(updatedClass);
+            if (!syncResult.success) {
+              console.warn('同步学生状态变更失败:', syncResult.message);
+            }
+          } catch (syncError) {
+            console.error('同步失败:', syncError);
+          }
+        }
       }
       
       const statusText = {
@@ -697,15 +779,30 @@ export default function ClassDetailPage() {
       const savedClasses = localStorage.getItem('carbonlab-classes');
       if (savedClasses) {
         const classes = JSON.parse(savedClasses);
+        const updatedClass: Class = { 
+          ...classInfo!, 
+          students: updatedStudents.map(s => s.id), 
+          currentStudents: updatedStudents.length 
+        };
         const updatedClasses = classes.map((cls: Class) => 
-          cls.id === classId 
-            ? { ...cls, students: updatedStudents.map(s => s.id), currentStudents: updatedStudents.length }
-            : cls
+          cls.id === classId ? updatedClass : cls
         );
         localStorage.setItem('carbonlab-classes', JSON.stringify(updatedClasses));
         
         // 同步更新本地班级信息
-        setClassInfo(prev => prev ? { ...prev, currentStudents: updatedStudents.length } : null);
+        setClassInfo(updatedClass);
+        
+        // 如果班级已同步到 Tale 平台，自动同步学生变更
+        if (updatedClass.taleGroupId) {
+          try {
+            const syncResult = await classSyncService.syncClassToTale(updatedClass);
+            if (!syncResult.success) {
+              console.warn('同步学生状态变更失败:', syncResult.message);
+            }
+          } catch (syncError) {
+            console.error('同步失败:', syncError);
+          }
+        }
       }
       
       const statusText = {
@@ -721,6 +818,46 @@ export default function ClassDetailPage() {
     }
   };
 
+  // 手动同步班级到 Tale 平台
+  const handleSyncClass = async () => {
+    if (!classInfo) return;
+    
+    try {
+      setSyncLoading(true);
+      const syncResult = await classSyncService.syncClassToTale(classInfo);
+      
+      if (syncResult.success) {
+        // 更新班级的同步信息
+        const updatedClass = {
+          ...classInfo,
+          taleGroupId: syncResult.data?.taleGroupId || classInfo.taleGroupId,
+          lastSyncTime: syncResult.data?.lastSyncTime,
+          syncStatus: 'synced' as const
+        };
+        
+        // 更新 localStorage
+        const savedClasses = localStorage.getItem('carbonlab-classes');
+        if (savedClasses) {
+          const classes = JSON.parse(savedClasses);
+          const updatedClasses = classes.map((cls: Class) => 
+            cls.id === classId ? updatedClass : cls
+          );
+          localStorage.setItem('carbonlab-classes', JSON.stringify(updatedClasses));
+        }
+        
+        setClassInfo(updatedClass);
+        toast.success(`班级 "${classInfo.name}" 同步成功`);
+      } else {
+        toast.error(`同步失败：${syncResult.message}`);
+      }
+    } catch (error) {
+      console.error('同步失败:', error);
+      toast.error('同步失败，请稍后重试');
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
   // 单独移除学生
   const handleRemoveStudent = async (studentId: string, studentName: string) => {
     try {
@@ -731,18 +868,36 @@ export default function ClassDetailPage() {
       const savedClasses = localStorage.getItem('carbonlab-classes');
       if (savedClasses) {
         const classes = JSON.parse(savedClasses);
+        const updatedClass: Class = { 
+          ...classInfo!, 
+          students: updatedStudents.map(s => s.id), 
+          currentStudents: updatedStudents.length 
+        };
         const updatedClasses = classes.map((cls: Class) => 
-          cls.id === classId 
-            ? { ...cls, students: updatedStudents.map(s => s.id), currentStudents: updatedStudents.length }
-            : cls
+          cls.id === classId ? updatedClass : cls
         );
         localStorage.setItem('carbonlab-classes', JSON.stringify(updatedClasses));
         
         // 同步更新本地班级信息
-        setClassInfo(prev => prev ? { ...prev, currentStudents: updatedStudents.length } : null);
+        setClassInfo(updatedClass);
+        
+        // 如果班级已同步到 Tale 平台，自动同步学生变更
+        if (updatedClass.taleGroupId) {
+          try {
+            const syncResult = await classSyncService.syncClassToTale(updatedClass);
+            if (syncResult.success) {
+              toast.success(`已成功从班级移除学生 "${studentName}" 并同步到 Tale 平台`);
+            } else {
+              toast.warning(`学生移除成功，但同步到 Tale 平台失败：${syncResult.message}`);
+            }
+          } catch (syncError) {
+            console.error('同步失败:', syncError);
+            toast.warning(`学生移除成功，但同步到 Tale 平台失败`);
+          }
+        } else {
+          toast.success(`已成功从班级移除学生 "${studentName}"`);
+        }
       }
-      
-      toast.success(`已成功从班级移除学生 "${studentName}"`);
     } catch (error) {
       console.error('Failed to remove student:', error);
       toast.error('从班级移除学生失败，请稍后重试');
@@ -763,10 +918,51 @@ export default function ClassDetailPage() {
           >
             <ArrowLeft className='h-10 w-10 ' />
           </Button>
-          <div>
+          <div className='flex-1'>
             <h1 className='text-2xl font-bold text-gray-900 mb-2'>
               {className} - 班级学生管理
             </h1>
+            {classInfo && (
+              <div className='flex items-center gap-2 text-sm text-gray-600'>
+                {classInfo.syncStatus === 'synced' ? (
+                  <div className='flex items-center gap-1 text-green-600'>
+                    <CheckCircle className='h-4 w-4' />
+                    <span>已同步到 Tale 平台</span>
+                  </div>
+                ) : classInfo.syncStatus === 'pending' ? (
+                  <div className='flex items-center gap-1 text-yellow-600'>
+                    <Clock className='h-4 w-4' />
+                    <span>待同步</span>
+                  </div>
+                ) : classInfo.syncStatus === 'error' ? (
+                  <div className='flex items-center gap-1 text-red-600'>
+                    <XCircleIcon className='h-4 w-4' />
+                    <span>同步失败</span>
+                  </div>
+                ) : (
+                  <div className='flex items-center gap-1 text-gray-500'>
+                    <Cloud className='h-4 w-4' />
+                    <span>未同步</span>
+                  </div>
+                )}
+                {classInfo.lastSyncTime && (
+                  <span className='text-xs'>
+                    (最后同步: {new Date(classInfo.lastSyncTime).toLocaleString()})
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
+          <div className='flex items-center gap-2'>
+            <Button
+              variant='outline'
+              onClick={handleSyncClass}
+              disabled={syncLoading || !classInfo}
+              className='bg-green-50 hover:bg-green-100 text-green-700 border-green-200'
+            >
+              <RefreshCw className={`mr-2 h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
+              同步到 Tale 平台
+            </Button>
           </div>
         </div>
 

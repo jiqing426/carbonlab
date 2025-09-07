@@ -15,6 +15,11 @@ import {
   ArrowLeft,
   Calendar,
   User,
+  RefreshCw,
+  Cloud,
+  CheckCircle,
+  XCircle,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -769,6 +774,7 @@ export default function RepositoryDetail() {
     }
   };
 
+
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
@@ -880,11 +886,17 @@ export default function RepositoryDetail() {
                         <Calendar className='w-4 h-4' />
                         <span>更新时间：{new Date(repository.updatedAt).toLocaleDateString('zh-CN')}</span>
                       </div>
+                      {(repository as any).lastSyncTime && (
+                        <div className='flex items-center space-x-2'>
+                          <Clock className='w-4 h-4' />
+                          <span>最后同步：{new Date((repository as any).lastSyncTime).toLocaleString('zh-CN')}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div>
                     <h4 className='font-medium text-gray-900 mb-2'>支持的文件类型</h4>
-                    <div className='flex flex-wrap gap-2'>
+                    <div className='flex flex-wrap gap-2 mb-4'>
                       {repository.folderType.map(type => {
                         const option = fileTypeOptions.find(opt => opt.value === type);
                         return option ? (
@@ -894,6 +906,35 @@ export default function RepositoryDetail() {
                           </Badge>
                         ) : null;
                       })}
+                    </div>
+                    <h4 className='font-medium text-gray-900 mb-2'>同步状态</h4>
+                    <div className='flex items-center space-x-2'>
+                      {(repository as any).syncStatus === 'synced' ? (
+                        <Badge variant='default' className='bg-green-100 text-green-800 border-green-200'>
+                          <CheckCircle className='w-3 h-3 mr-1' />
+                          已同步
+                        </Badge>
+                      ) : (repository as any).syncStatus === 'error' ? (
+                        <Badge variant='destructive'>
+                          <XCircle className='w-3 h-3 mr-1' />
+                          同步失败
+                        </Badge>
+                      ) : (repository as any).syncStatus === 'pending' ? (
+                        <Badge variant='secondary' className='bg-yellow-100 text-yellow-800 border-yellow-200'>
+                          <Clock className='w-3 h-3 mr-1' />
+                          待同步
+                        </Badge>
+                      ) : (
+                        <Badge variant='outline'>
+                          <Cloud className='w-3 h-3 mr-1' />
+                          未同步
+                        </Badge>
+                      )}
+                      {(repository as any).taleFolderId && (
+                        <span className='text-xs text-gray-500'>
+                          Tale ID: {(repository as any).taleFolderId}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>

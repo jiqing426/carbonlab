@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search,
-  Plus,
   FolderOpen,
   Edit,
   Trash2,
@@ -13,11 +12,16 @@ import {
   Video,
   FileImage,
   Link,
+  RefreshCw,
+  Cloud,
+  CheckCircle,
+  XCircle,
+  Clock,
+  ArrowLeftRight,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -40,6 +44,7 @@ import { toast } from 'sonner';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useUserStore } from '@/lib/stores/user-store';
 import { Breadcrumb } from '@/components/breadcrumb';
+import { resourceSyncService, LocalRepository } from '@/lib/services/resource-sync-service';
 
 // 资料库接口类型
 interface Repository {
@@ -57,6 +62,11 @@ interface Repository {
   // 新增字段：用于控制特定页面内容
   controlTarget?: 'latest-policy' | 'hot-news' | 'global-data' | 'china-report';
   displayOrder?: number; // 显示顺序
+  // 同步相关字段
+  taleFolderId?: string; // Tale 平台文件夹 ID
+  lastSyncTime?: string; // 最后同步时间
+  syncStatus?: 'synced' | 'pending' | 'error'; // 同步状态
+  syncError?: string; // 同步错误信息
 }
 
 const fileTypeOptions = [
@@ -164,16 +174,11 @@ export default function ResourcesManagement() {
   const { user } = useUserStore();
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showAddRepoDialog, setShowAddRepoDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
 
-  const [newRepo, setNewRepo] = useState({
-    folderName: '',
-    remark: '',
-    folderType: [] as string[],
-    folderAttr: '{}',
-  });
 
   const loadRepositories = useCallback(async () => {
     setLoading(true);
@@ -214,14 +219,6 @@ export default function ResourcesManagement() {
     loadRepositories();
   }, [loadRepositories]);
 
-  const handleFileTypeChange = (fileType: string, checked: boolean) => {
-    setNewRepo(prev => ({
-      ...prev,
-      folderType: checked
-        ? [...prev.folderType, fileType]
-        : prev.folderType.filter(type => type !== fileType),
-    }));
-  };
 
   const parseJsonAttr = (jsonStr: string) => {
     try {
@@ -231,49 +228,6 @@ export default function ResourcesManagement() {
     }
   };
 
-  const handleAddRepository = async () => {
-    try {
-      if (!newRepo.folderName.trim()) {
-        toast.error('请输入资料库名称');
-        return;
-      }
-
-      if (newRepo.folderType.length === 0) {
-        toast.error('请选择至少一种支持的文件类型');
-        return;
-      }
-
-      const newRepository: Repository = {
-        id: `repo_${Date.now()}`,
-        folderName: newRepo.folderName.trim(),
-        folderType: newRepo.folderType,
-        remark: newRepo.remark.trim(),
-        folderAttr: parseJsonAttr(newRepo.folderAttr),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        supportedFileTypes: newRepo.folderType
-      };
-
-      const updatedRepositories = [newRepository, ...repositories];
-      setRepositories(updatedRepositories);
-      
-      // 保存到 localStorage
-      localStorage.setItem('mockRepositories', JSON.stringify(updatedRepositories));
-      
-      setShowAddRepoDialog(false);
-      setNewRepo({
-        folderName: '',
-        remark: '',
-        folderType: [],
-        folderAttr: '{}',
-      });
-      
-      toast.success('资料库创建成功');
-    } catch (error) {
-      toast.error('创建资料库失败');
-      console.error('Failed to create repository:', error);
-    }
-  };
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingRepo, setDeletingRepo] = useState<Repository | null>(null);
@@ -299,6 +253,15 @@ export default function ResourcesManagement() {
     try {
       // 显示删除进度
       toast.loading('正在删除资料库...', { id: 'delete-repo' });
+      
+      // 如果有关联的 Tale 文件夹，先从 Tale 平台删除
+      if (deletingRepo.taleFolderId) {
+        try {
+          await resourceSyncService.deleteRepositoryFromTale(deletingRepo.taleFolderId);
+        } catch (syncError) {
+          console.warn('从 Tale 平台删除失败，继续本地删除:', syncError);
+        }
+      }
       
       // 模拟删除延迟，让用户感知到操作正在进行
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -331,6 +294,106 @@ export default function ResourcesManagement() {
   const handleViewRepository = (repo: Repository) => {
     // 导航到资源详情页面
     router.push(`/dashboard/resources/${repo.id}`);
+  };
+
+  // 同步单个资源库
+  const handleSyncRepository = async (repository: Repository) => {
+    try {
+      setSyncLoading(true);
+      toast.info(`开始同步资源库 "${repository.folderName}"...`);
+      
+      const result = await resourceSyncService.syncRepositoryToTale(repository as LocalRepository);
+      
+      if (result.success) {
+        // 更新资源库的同步状态
+        const updatedRepositories = repositories.map(repo => 
+          repo.id === repository.id 
+            ? {
+                ...repo,
+                taleFolderId: result.data?.taleFolderId || repo.taleFolderId,
+                lastSyncTime: result.data?.lastSyncTime,
+                syncStatus: 'synced' as const,
+                syncError: undefined
+              }
+            : repo
+        );
+        
+        setRepositories(updatedRepositories);
+        localStorage.setItem('mockRepositories', JSON.stringify(updatedRepositories));
+        
+        toast.success(result.message);
+      } else {
+        // 更新错误状态
+        const updatedRepositories = repositories.map(repo => 
+          repo.id === repository.id 
+            ? {
+                ...repo,
+                syncStatus: 'error' as const,
+                syncError: result.error
+              }
+            : repo
+        );
+        
+        setRepositories(updatedRepositories);
+        localStorage.setItem('mockRepositories', JSON.stringify(updatedRepositories));
+        
+        toast.error(`同步失败：${result.message}`);
+      }
+    } catch (error) {
+      console.error('同步资源库失败:', error);
+      toast.error('同步失败，请稍后重试');
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  // 同步到 Tale 平台
+  const handleBidirectionalSync = async () => {
+    try {
+      setSyncLoading(true);
+      setSyncStatus('syncing');
+      toast.info('开始同步资源库数据到 Tale 平台...');
+      
+      const result = await resourceSyncService.syncBidirectional();
+      
+      if (result.success) {
+        // 重新加载数据
+        await loadRepositories();
+        setSyncStatus('success');
+        toast.success(result.message);
+      } else {
+        setSyncStatus('error');
+        toast.error(`同步失败：${result.message}`);
+      }
+    } catch (error) {
+      console.error('同步失败:', error);
+      setSyncStatus('error');
+      toast.error('同步失败，请稍后重试');
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  // 检查数据一致性
+  const handleCheckConsistency = async () => {
+    try {
+      setSyncLoading(true);
+      toast.info('正在检查数据一致性...');
+      
+      const consistency = await resourceSyncService.checkDataConsistency();
+      
+      if (consistency.isConsistent) {
+        toast.success(`数据一致性检查通过：本地 ${consistency.localCount} 个，远程 ${consistency.remoteCount} 个资源库`);
+      } else {
+        toast.warning(`发现数据不一致：${consistency.inconsistencies.length} 个问题`);
+        console.warn('数据不一致详情:', consistency.inconsistencies);
+      }
+    } catch (error) {
+      console.error('检查数据一致性失败:', error);
+      toast.error('检查数据一致性失败');
+    } finally {
+      setSyncLoading(false);
+    }
   };
 
   const filteredRepositories = repositories.filter(repo => {
@@ -376,22 +439,26 @@ export default function ResourcesManagement() {
                     <FolderOpen className='h-5 w-5 text-blue-600' />
                     资料库管理
                   </CardTitle>
-                  <Button
-                    onClick={() => {
-                      setNewRepo({
-                        folderName: '',
-                        remark: '',
-                        folderType: [],
-                        folderAttr: '{}',
-                      });
-                      setShowAddRepoDialog(true);
-                    }}
-                    disabled={loading}
-                    className='bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105'
-                  >
-                    <Plus className='w-4 h-4 mr-2' />
-                    添加资料库
-                  </Button>
+                  <div className='flex items-center gap-2'>
+                    <Button
+                      variant='outline'
+                      onClick={handleBidirectionalSync}
+                      disabled={syncLoading}
+                      className='bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200'
+                    >
+                      <ArrowLeftRight className={`mr-2 h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
+                      同步到 Tale 平台
+                    </Button>
+                    <Button
+                      variant='outline'
+                      onClick={handleCheckConsistency}
+                      disabled={syncLoading}
+                      className='bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200'
+                    >
+                      <Shield className={`mr-2 h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
+                      检查一致性
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
@@ -432,6 +499,9 @@ export default function ResourcesManagement() {
                         控制目标
                       </TableHead>
                       <TableHead className='font-semibold text-gray-800 border-0'>
+                        同步状态
+                      </TableHead>
+                      <TableHead className='font-semibold text-gray-800 border-0'>
                         创建时间
                       </TableHead>
                       <TableHead className='font-semibold text-gray-800 border-0'>
@@ -446,7 +516,7 @@ export default function ResourcesManagement() {
                     {filteredRepositories.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={6}
+                          colSpan={7}
                           className='text-center py-8 text-gray-500'
                         >
                           {searchTerm
@@ -511,6 +581,46 @@ export default function ResourcesManagement() {
                               <span className='text-gray-400 text-xs'>未设置</span>
                             )}
                           </TableCell>
+                          <TableCell>
+                            <div className='flex items-center gap-2'>
+                              {repo.syncStatus === 'synced' ? (
+                                <div className='flex items-center gap-1 text-green-600'>
+                                  <CheckCircle className='h-4 w-4' />
+                                  <span className='text-xs'>已同步</span>
+                                </div>
+                              ) : repo.syncStatus === 'pending' ? (
+                                <div className='flex items-center gap-1 text-yellow-600'>
+                                  <Clock className='h-4 w-4' />
+                                  <span className='text-xs'>待同步</span>
+                                </div>
+                              ) : repo.syncStatus === 'error' ? (
+                                <div className='flex items-center gap-1 text-red-600'>
+                                  <XCircle className='h-4 w-4' />
+                                  <span className='text-xs'>同步失败</span>
+                                </div>
+                              ) : (
+                                <div className='flex items-center gap-1 text-gray-500'>
+                                  <Cloud className='h-4 w-4' />
+                                  <span className='text-xs'>未同步</span>
+                                </div>
+                              )}
+                              <Button
+                                variant='ghost'
+                                size='sm'
+                                onClick={() => handleSyncRepository(repo)}
+                                disabled={syncLoading}
+                                className='h-6 w-6 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                title='手动同步'
+                              >
+                                <RefreshCw className={`h-3 w-3 ${syncLoading ? 'animate-spin' : ''}`} />
+                              </Button>
+                            </div>
+                            {repo.lastSyncTime && (
+                              <div className='text-xs text-gray-400 mt-1'>
+                                {new Date(repo.lastSyncTime).toLocaleString('zh-CN')}
+                              </div>
+                            )}
+                          </TableCell>
                           <TableCell className='text-gray-600'>
                             {new Date(repo.createdAt).toLocaleDateString(
                               'zh-CN'
@@ -551,76 +661,6 @@ export default function ResourcesManagement() {
           </Card>
         </div>
 
-        {/* 添加资料库对话框 */}
-        <Dialog open={showAddRepoDialog} onOpenChange={setShowAddRepoDialog}>
-          <DialogContent className='max-w-2xl max-h-[80vh] overflow-y-auto'>
-            <DialogHeader>
-              <DialogTitle>添加资料库</DialogTitle>
-              <DialogDescription>
-                创建一个新的资料库来管理文档
-              </DialogDescription>
-            </DialogHeader>
-            <div className='grid gap-4 py-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='folderName'>资料库名称</Label>
-                <Input
-                  id='folderName'
-                  value={newRepo.folderName}
-                  onChange={e =>
-                    setNewRepo({ ...newRepo, folderName: e.target.value })
-                  }
-                  placeholder='输入资料库名称'
-                />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='remark'>备注</Label>
-                <Input
-                  id='remark'
-                  value={newRepo.remark}
-                  onChange={e =>
-                    setNewRepo({ ...newRepo, remark: e.target.value })
-                  }
-                  placeholder='输入备注信息'
-                />
-              </div>
-              <div className='space-y-2'>
-                <Label>支持的文件类型</Label>
-                <div className='grid grid-cols-2 gap-2 max-h-32 overflow-y-auto'>
-                  {fileTypeOptions.map(option => (
-                    <div
-                      key={option.value}
-                      className='flex items-center space-x-2'
-                    >
-                      <Checkbox
-                        id={option.value}
-                        checked={newRepo.folderType.includes(option.value)}
-                        onCheckedChange={checked =>
-                          handleFileTypeChange(option.value, checked as boolean)
-                        }
-                      />
-                      <Label
-                        htmlFor={option.value}
-                        className='flex items-center gap-2'
-                      >
-                        <option.icon className={`w-4 h-4 ${option.color}`} />
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <DialogFooter className='sticky bottom-0 bg-white pt-4 border-t'>
-              <Button
-                variant='outline'
-                onClick={() => setShowAddRepoDialog(false)}
-              >
-                取消
-              </Button>
-              <Button onClick={handleAddRepository}>添加</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         {/* 删除确认对话框 */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>

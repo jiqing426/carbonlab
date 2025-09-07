@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
     
     // 尝试调用真实的Tale系统API获取token
     try {
-      const response = await fetch(`${backendUrl}/auth/v1/app/token`, {
+      const response = await fetch(`${backendUrl}/app/v1/token`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -28,10 +28,11 @@ export async function GET(request: NextRequest) {
         const data = await response.json()
         console.log('Tale API 响应成功:', data)
         
-        // 返回真实的token数据
+        // 返回真实的token数据 - 修复数据结构访问
+        const tokenData = data.data || data
         return NextResponse.json({
-          token: data.token || data.access_token,
-          expired_time: data.expired_at || data.expires_at || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+          token: tokenData.token || tokenData.access_token,
+          expired_time: tokenData.expired_at || tokenData.expires_at || new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
         })
       } else {
         console.warn('Tale API 调用失败，状态码:', response.status)
