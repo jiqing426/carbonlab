@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   Search,
-  Plus,
   FolderOpen,
   Edit,
   Trash2,
@@ -13,11 +12,16 @@ import {
   Video,
   FileImage,
   Link,
+  RefreshCw,
+  Cloud,
+  CheckCircle,
+  XCircle,
+  Clock,
+  ArrowLeftRight,
+  Shield,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   Dialog,
   DialogContent,
@@ -39,6 +43,8 @@ import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { SidebarTrigger } from '@/components/ui/sidebar';
 import { useUserStore } from '@/lib/stores/user-store';
+import { Breadcrumb } from '@/components/breadcrumb';
+import { resourceSyncService, LocalRepository } from '@/lib/services/resource-sync-service';
 
 // 资料库接口类型
 interface Repository {
@@ -56,6 +62,11 @@ interface Repository {
   // 新增字段：用于控制特定页面内容
   controlTarget?: 'latest-policy' | 'hot-news' | 'global-data' | 'china-report';
   displayOrder?: number; // 显示顺序
+  // 同步相关字段
+  taleFolderId?: string; // Tale 平台文件夹 ID
+  lastSyncTime?: string; // 最后同步时间
+  syncStatus?: 'synced' | 'pending' | 'error'; // 同步状态
+  syncError?: string; // 同步错误信息
 }
 
 const fileTypeOptions = [
@@ -160,19 +171,14 @@ const mockRepositories: Repository[] = [
 
 export default function ResourcesManagement() {
   const router = useRouter();
-  const { currentApp } = useUserStore();
+  const { user } = useUserStore();
   const [repositories, setRepositories] = useState<Repository[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showAddRepoDialog, setShowAddRepoDialog] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<'idle' | 'syncing' | 'success' | 'error'>('idle');
 
-  const [newRepo, setNewRepo] = useState({
-    folderName: '',
-    remark: '',
-    folderType: [] as string[],
-    folderAttr: '{}',
-  });
 
   const loadRepositories = useCallback(async () => {
     setLoading(true);
@@ -213,14 +219,6 @@ export default function ResourcesManagement() {
     loadRepositories();
   }, [loadRepositories]);
 
-  const handleFileTypeChange = (fileType: string, checked: boolean) => {
-    setNewRepo(prev => ({
-      ...prev,
-      folderType: checked
-        ? [...prev.folderType, fileType]
-        : prev.folderType.filter(type => type !== fileType),
-    }));
-  };
 
   const parseJsonAttr = (jsonStr: string) => {
     try {
@@ -230,49 +228,6 @@ export default function ResourcesManagement() {
     }
   };
 
-  const handleAddRepository = async () => {
-    try {
-      if (!newRepo.folderName.trim()) {
-        toast.error('请输入资料库名称');
-        return;
-      }
-
-      if (newRepo.folderType.length === 0) {
-        toast.error('请选择至少一种支持的文件类型');
-        return;
-      }
-
-      const newRepository: Repository = {
-        id: `repo_${Date.now()}`,
-        folderName: newRepo.folderName.trim(),
-        folderType: newRepo.folderType,
-        remark: newRepo.remark.trim(),
-        folderAttr: parseJsonAttr(newRepo.folderAttr),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        supportedFileTypes: newRepo.folderType
-      };
-
-      const updatedRepositories = [newRepository, ...repositories];
-      setRepositories(updatedRepositories);
-      
-      // 保存到 localStorage
-      localStorage.setItem('mockRepositories', JSON.stringify(updatedRepositories));
-      
-      setShowAddRepoDialog(false);
-      setNewRepo({
-        folderName: '',
-        remark: '',
-        folderType: [],
-        folderAttr: '{}',
-      });
-      
-      toast.success('资料库创建成功');
-    } catch (error) {
-      toast.error('创建资料库失败');
-      console.error('Failed to create repository:', error);
-    }
-  };
 
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingRepo, setDeletingRepo] = useState<Repository | null>(null);
@@ -285,14 +240,32 @@ export default function ResourcesManagement() {
   };
 
   const handleDeleteRepository = async () => {
-    if (!deletingRepo) return;
+    if (!deletingRepo) {
+      toast.error('未选择要删除的资料库');
+      return;
+    }
 
     if (confirmRepoName !== deletingRepo.folderName) {
-      toast.error('输入的资料库名称不匹配');
+      toast.error('输入的资料库名称不匹配，请重新输入');
       return;
     }
 
     try {
+      // 显示删除进度
+      toast.loading('正在删除资料库...', { id: 'delete-repo' });
+      
+      // 如果有关联的 Tale 文件夹，先从 Tale 平台删除
+      if (deletingRepo.taleFolderId) {
+        try {
+          await resourceSyncService.deleteRepositoryFromTale(deletingRepo.taleFolderId);
+        } catch (syncError) {
+          console.warn('从 Tale 平台删除失败，继续本地删除:', syncError);
+        }
+      }
+      
+      // 模拟删除延迟，让用户感知到操作正在进行
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       const updatedRepositories = repositories.filter(repo => repo.id !== deletingRepo.id);
       setRepositories(updatedRepositories);
       
@@ -302,12 +275,18 @@ export default function ResourcesManagement() {
       // 同时删除相关的文件数据
       localStorage.removeItem(`files_${deletingRepo.id}`);
       
+      // 关闭对话框并重置状态
       setIsDeleteDialogOpen(false);
       setDeletingRepo(null);
       setConfirmRepoName('');
-      toast.success('资料库删除成功');
+      
+      // 显示成功消息
+      toast.success(`资料库「${deletingRepo.folderName}」已成功删除`, { id: 'delete-repo' });
+      
+      // 重新加载数据以确保界面同步
+      loadRepositories();
     } catch (error) {
-      toast.error('删除资料库失败');
+      toast.error('删除资料库失败，请稍后重试', { id: 'delete-repo' });
       console.error('Failed to delete repository:', error);
     }
   };
@@ -315,6 +294,106 @@ export default function ResourcesManagement() {
   const handleViewRepository = (repo: Repository) => {
     // 导航到资源详情页面
     router.push(`/dashboard/resources/${repo.id}`);
+  };
+
+  // 同步单个资源库
+  const handleSyncRepository = async (repository: Repository) => {
+    try {
+      setSyncLoading(true);
+      toast.info(`开始同步资源库 "${repository.folderName}"...`);
+      
+      const result = await resourceSyncService.syncRepositoryToTale(repository as LocalRepository);
+      
+      if (result.success) {
+        // 更新资源库的同步状态
+        const updatedRepositories = repositories.map(repo => 
+          repo.id === repository.id 
+            ? {
+                ...repo,
+                taleFolderId: result.data?.taleFolderId || repo.taleFolderId,
+                lastSyncTime: result.data?.lastSyncTime,
+                syncStatus: 'synced' as const,
+                syncError: undefined
+              }
+            : repo
+        );
+        
+        setRepositories(updatedRepositories);
+        localStorage.setItem('mockRepositories', JSON.stringify(updatedRepositories));
+        
+        toast.success(result.message);
+      } else {
+        // 更新错误状态
+        const updatedRepositories = repositories.map(repo => 
+          repo.id === repository.id 
+            ? {
+                ...repo,
+                syncStatus: 'error' as const,
+                syncError: result.error
+              }
+            : repo
+        );
+        
+        setRepositories(updatedRepositories);
+        localStorage.setItem('mockRepositories', JSON.stringify(updatedRepositories));
+        
+        toast.error(`同步失败：${result.message}`);
+      }
+    } catch (error) {
+      console.error('同步资源库失败:', error);
+      toast.error('同步失败，请稍后重试');
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  // 同步到 Tale 平台
+  const handleBidirectionalSync = async () => {
+    try {
+      setSyncLoading(true);
+      setSyncStatus('syncing');
+      toast.info('开始同步资源库数据到 Tale 平台...');
+      
+      const result = await resourceSyncService.syncBidirectional();
+      
+      if (result.success) {
+        // 重新加载数据
+        await loadRepositories();
+        setSyncStatus('success');
+        toast.success(result.message);
+      } else {
+        setSyncStatus('error');
+        toast.error(`同步失败：${result.message}`);
+      }
+    } catch (error) {
+      console.error('同步失败:', error);
+      setSyncStatus('error');
+      toast.error('同步失败，请稍后重试');
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  // 检查数据一致性
+  const handleCheckConsistency = async () => {
+    try {
+      setSyncLoading(true);
+      toast.info('正在检查数据一致性...');
+      
+      const consistency = await resourceSyncService.checkDataConsistency();
+      
+      if (consistency.isConsistent) {
+        toast.success(`数据一致性检查通过：本地 ${consistency.localCount} 个，远程 ${consistency.remoteCount} 个资源库`);
+      } else {
+        toast.warning(`发现数据不一致：${consistency.inconsistencies.length} 个问题`);
+        console.warn('数据不一致详情:', consistency.inconsistencies);
+      }
+    } catch (error) {
+      console.error('检查数据一致性失败:', error);
+      toast.error('检查数据一致性失败');
+    } finally {
+      setSyncLoading(false);
+    }
   };
 
   const filteredRepositories = repositories.filter(repo => {
@@ -328,15 +407,21 @@ export default function ResourcesManagement() {
 
   return (
     <>
-      <div className='flex h-16 items-center border-b px-4'>
+      <div className='flex h-16 items-center border-b bg-gradient-to-r from-blue-50 to-indigo-50 px-4 shadow-sm'>
         <SidebarTrigger />
       </div>
-      <div className='p-6'>
+      <div className='min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-indigo-50/30 p-6'>
         <div className='max-w-7xl mx-auto'>
+          <div className='mb-6'>
+            <Breadcrumb />
+          </div>
           <div className='flex justify-between items-center mb-8'>
-            <h1 className='text-3xl font-bold text-foreground tracking-tight'>
-              资料库管理
-            </h1>
+            <div className='space-y-2'>
+              <h1 className='text-4xl font-bold gradient-text-blue tracking-tight'>
+                资料库管理
+              </h1>
+              <p className='text-gray-600 text-lg'>管理和组织您的学习资源</p>
+            </div>
           </div>
 
           {error && (
@@ -347,33 +432,38 @@ export default function ResourcesManagement() {
 
           <div className='w-full space-y-6'>
             {/* 头部区域 */}
-            <Card>
-              <CardHeader>
+            <Card className='shadow-lg border-0 bg-white/80 backdrop-blur-sm'>
+              <CardHeader className='bg-gradient-to-r from-blue-50 to-indigo-50 rounded-t-lg'>
                 <div className='flex items-center justify-between'>
-                  <CardTitle>资料库管理</CardTitle>
-                  <Button
-                    onClick={() => {
-                      setNewRepo({
-                        folderName: '',
-                        remark: '',
-                        folderType: [],
-                        folderAttr: '{}',
-                      });
-                      setShowAddRepoDialog(true);
-                    }}
-                    disabled={loading}
-                  >
-                    <Plus className='w-4 h-4 mr-2' />
-                    添加资料库
-                  </Button>
+                  <CardTitle className='text-xl font-semibold text-gray-800 flex items-center gap-2'>
+                    <FolderOpen className='h-5 w-5 text-blue-600' />
+                    资料库管理
+                  </CardTitle>
+                  <div className='flex items-center gap-2'>
+                    <Button
+                      variant='outline'
+                      onClick={handleBidirectionalSync}
+                      disabled={syncLoading}
+                      className='bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200'
+                    >
+                      <ArrowLeftRight className={`mr-2 h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
+                      同步到 Tale 平台
+                    </Button>
+                    <Button
+                      variant='outline'
+                      onClick={handleCheckConsistency}
+                      disabled={syncLoading}
+                      className='bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200'
+                    >
+                      <Shield className={`mr-2 h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
+                      检查一致性
+                    </Button>
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
                 <div className='flex gap-4 items-end'>
                   <div className='flex-1'>
-                    <label className='text-sm font-medium text-gray-700'>
-                      搜索资料库
-                    </label>
                     <div className='relative mt-1'>
                       <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4' />
                       <Input
@@ -396,25 +486,28 @@ export default function ResourcesManagement() {
                   <div className='text-lg'>加载中...</div>
                 </div>
               ) : (
-                <Table>
+                <Table className='border-0'>
                   <TableHeader>
-                    <TableRow className='bg-gray-50'>
-                      <TableHead className='font-semibold text-gray-900'>
+                    <TableRow className='bg-gradient-to-r from-blue-50 to-indigo-50 border-0'>
+                      <TableHead className='font-semibold text-gray-800 border-0'>
                         资料库名称
                       </TableHead>
-                      <TableHead className='font-semibold text-gray-900'>
+                      <TableHead className='font-semibold text-gray-800 border-0'>
                         支持类型
                       </TableHead>
-                      <TableHead className='font-semibold text-gray-900'>
+                      <TableHead className='font-semibold text-gray-800 border-0'>
                         控制目标
                       </TableHead>
-                      <TableHead className='font-semibold text-gray-900'>
+                      <TableHead className='font-semibold text-gray-800 border-0'>
+                        同步状态
+                      </TableHead>
+                      <TableHead className='font-semibold text-gray-800 border-0'>
                         创建时间
                       </TableHead>
-                      <TableHead className='font-semibold text-gray-900'>
+                      <TableHead className='font-semibold text-gray-800 border-0'>
                         备注
                       </TableHead>
-                      <TableHead className='font-semibold text-gray-900 text-right'>
+                      <TableHead className='font-semibold text-gray-800 text-right border-0'>
                         操作
                       </TableHead>
                     </TableRow>
@@ -423,7 +516,7 @@ export default function ResourcesManagement() {
                     {filteredRepositories.length === 0 ? (
                       <TableRow>
                         <TableCell
-                          colSpan={6}
+                          colSpan={7}
                           className='text-center py-8 text-gray-500'
                         >
                           {searchTerm
@@ -433,7 +526,7 @@ export default function ResourcesManagement() {
                       </TableRow>
                     ) : (
                       filteredRepositories.map(repo => (
-                        <TableRow key={repo.id} className='hover:bg-gray-50'>
+                        <TableRow key={repo.id} className='hover:bg-blue-50/50 transition-colors duration-200 border-0'>
                           <TableCell>
                             <div className='flex items-center space-x-3'>
                               <FolderOpen className='w-5 h-5 text-blue-600' />
@@ -488,6 +581,46 @@ export default function ResourcesManagement() {
                               <span className='text-gray-400 text-xs'>未设置</span>
                             )}
                           </TableCell>
+                          <TableCell>
+                            <div className='flex items-center gap-2'>
+                              {repo.syncStatus === 'synced' ? (
+                                <div className='flex items-center gap-1 text-green-600'>
+                                  <CheckCircle className='h-4 w-4' />
+                                  <span className='text-xs'>已同步</span>
+                                </div>
+                              ) : repo.syncStatus === 'pending' ? (
+                                <div className='flex items-center gap-1 text-yellow-600'>
+                                  <Clock className='h-4 w-4' />
+                                  <span className='text-xs'>待同步</span>
+                                </div>
+                              ) : repo.syncStatus === 'error' ? (
+                                <div className='flex items-center gap-1 text-red-600'>
+                                  <XCircle className='h-4 w-4' />
+                                  <span className='text-xs'>同步失败</span>
+                                </div>
+                              ) : (
+                                <div className='flex items-center gap-1 text-gray-500'>
+                                  <Cloud className='h-4 w-4' />
+                                  <span className='text-xs'>未同步</span>
+                                </div>
+                              )}
+                              <Button
+                                variant='ghost'
+                                size='sm'
+                                onClick={() => handleSyncRepository(repo)}
+                                disabled={syncLoading}
+                                className='h-6 w-6 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                title='手动同步'
+                              >
+                                <RefreshCw className={`h-3 w-3 ${syncLoading ? 'animate-spin' : ''}`} />
+                              </Button>
+                            </div>
+                            {repo.lastSyncTime && (
+                              <div className='text-xs text-gray-400 mt-1'>
+                                {new Date(repo.lastSyncTime).toLocaleString('zh-CN')}
+                              </div>
+                            )}
+                          </TableCell>
                           <TableCell className='text-gray-600'>
                             {new Date(repo.createdAt).toLocaleDateString(
                               'zh-CN'
@@ -502,7 +635,7 @@ export default function ResourcesManagement() {
                                 variant='ghost'
                                 size='sm'
                                 onClick={() => handleViewRepository(repo)}
-                                className='h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                className='h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200 hover:scale-105'
                                 title='查看详情'
                               >
                                 <Edit className='h-4 w-4' />
@@ -511,8 +644,8 @@ export default function ResourcesManagement() {
                                 variant='ghost'
                                 size='sm'
                                 onClick={() => handleDeleteClick(repo)}
-                                className='h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50'
-                                title='删除'
+                                className='h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 hover:scale-105'
+                                title='删除资料库（需要二次确认）'
                               >
                                 <Trash2 className='h-4 w-4' />
                               </Button>
@@ -528,107 +661,58 @@ export default function ResourcesManagement() {
           </Card>
         </div>
 
-        {/* 添加资料库对话框 */}
-        <Dialog open={showAddRepoDialog} onOpenChange={setShowAddRepoDialog}>
-          <DialogContent className='max-w-2xl max-h-[80vh] overflow-y-auto'>
-            <DialogHeader>
-              <DialogTitle>添加资料库</DialogTitle>
-              <DialogDescription>
-                创建一个新的资料库来管理文档
-              </DialogDescription>
-            </DialogHeader>
-            <div className='grid gap-4 py-4'>
-              <div className='space-y-2'>
-                <Label htmlFor='folderName'>资料库名称</Label>
-                <Input
-                  id='folderName'
-                  value={newRepo.folderName}
-                  onChange={e =>
-                    setNewRepo({ ...newRepo, folderName: e.target.value })
-                  }
-                  placeholder='输入资料库名称'
-                />
-              </div>
-              <div className='space-y-2'>
-                <Label htmlFor='remark'>备注</Label>
-                <Input
-                  id='remark'
-                  value={newRepo.remark}
-                  onChange={e =>
-                    setNewRepo({ ...newRepo, remark: e.target.value })
-                  }
-                  placeholder='输入备注信息'
-                />
-              </div>
-              <div className='space-y-2'>
-                <Label>支持的文件类型</Label>
-                <div className='grid grid-cols-2 gap-2 max-h-32 overflow-y-auto'>
-                  {fileTypeOptions.map(option => (
-                    <div
-                      key={option.value}
-                      className='flex items-center space-x-2'
-                    >
-                      <Checkbox
-                        id={option.value}
-                        checked={newRepo.folderType.includes(option.value)}
-                        onCheckedChange={checked =>
-                          handleFileTypeChange(option.value, checked as boolean)
-                        }
-                      />
-                      <Label
-                        htmlFor={option.value}
-                        className='flex items-center gap-2'
-                      >
-                        <option.icon className={`w-4 h-4 ${option.color}`} />
-                        {option.label}
-                      </Label>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <DialogFooter className='sticky bottom-0 bg-white pt-4 border-t'>
-              <Button
-                variant='outline'
-                onClick={() => setShowAddRepoDialog(false)}
-              >
-                取消
-              </Button>
-              <Button onClick={handleAddRepository}>添加</Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
 
         {/* 删除确认对话框 */}
         <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-          <DialogContent className='bg-background border-border'>
+          <DialogContent className='bg-background border-border max-w-md'>
             <DialogHeader>
-              <DialogTitle className='text-foreground'>
+              <DialogTitle className='text-foreground flex items-center gap-2'>
+                <Trash2 className='h-5 w-5 text-red-500' />
                 确认删除资料库
               </DialogTitle>
               <DialogDescription className='text-muted-foreground'>
-                此操作无法撤销。请输入资料库名称「{deletingRepo?.folderName}
-                」来确认删除。
+                <div className='space-y-2'>
+                  <p>⚠️ <strong>警告：此操作无法撤销！</strong></p>
+                  <p>删除资料库「<span className='font-semibold text-red-600'>{deletingRepo?.folderName}</span>」将会：</p>
+                  <ul className='list-disc list-inside text-sm space-y-1 ml-4'>
+                    <li>永久删除资料库及其所有文件</li>
+                    <li>清除相关的页面内容控制</li>
+                    <li>影响前端页面的数据展示</li>
+                  </ul>
+                  <p className='text-sm font-medium'>请输入资料库名称以确认删除：</p>
+                </div>
               </DialogDescription>
             </DialogHeader>
             <div className='space-y-4'>
               <div className='space-y-2'>
                 <label className='text-sm font-medium text-foreground'>
-                  请输入资料库名称确认
+                  资料库名称
                 </label>
                 <Input
-                  placeholder='输入资料库名称'
+                  placeholder={`请输入「${deletingRepo?.folderName}」`}
                   value={confirmRepoName}
                   onChange={e => setConfirmRepoName(e.target.value)}
                   className='bg-background border-border'
+                  autoComplete='off'
                 />
+                {confirmRepoName && confirmRepoName !== deletingRepo?.folderName && (
+                  <p className='text-xs text-red-500'>名称不匹配，请重新输入</p>
+                )}
+                {confirmRepoName === deletingRepo?.folderName && (
+                  <p className='text-xs text-green-500'>✓ 名称匹配，可以删除</p>
+                )}
               </div>
             </div>
-            <DialogFooter>
+            <DialogFooter className='gap-2'>
               <Button
                 type='button'
                 variant='outline'
-                onClick={() => setIsDeleteDialogOpen(false)}
+                onClick={() => {
+                  setIsDeleteDialogOpen(false);
+                  setDeletingRepo(null);
+                  setConfirmRepoName('');
+                }}
+                className='flex-1'
               >
                 取消
               </Button>
@@ -637,7 +721,9 @@ export default function ResourcesManagement() {
                 variant='destructive'
                 onClick={handleDeleteRepository}
                 disabled={confirmRepoName !== deletingRepo?.folderName}
+                className='flex-1'
               >
+                <Trash2 className='h-4 w-4 mr-2' />
                 确认删除
               </Button>
             </DialogFooter>

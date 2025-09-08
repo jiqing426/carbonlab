@@ -100,19 +100,46 @@ export async function getFiles(
   if (params?.keyword) queryParams.append('keyword', params.keyword);
   if (params?.folderId) queryParams.append('folderId', params.folderId);
 
-  const response = await fetch(
-    `${API_BASE_URL}/cms/file/page?${queryParams}`,
-    {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-t-token': appToken,
-      },
-    }
-  );
+  // 尝试不同的API路径
+  const apiPaths = [
+    `/cms/file/page?${queryParams}`,
+    `/cms/file/list?${queryParams}`,
+    `/cms/file?${queryParams}`,
+    `/file/page?${queryParams}`,
+    `/file/list?${queryParams}`,
+    `/file?${queryParams}`
+  ];
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+  let response;
+  let lastError;
+
+  for (const apiPath of apiPaths) {
+    try {
+      console.log(`尝试API路径: ${API_BASE_URL}${apiPath}`);
+      response = await fetch(`${API_BASE_URL}${apiPath}`, {
+        method: 'GET',
+        headers: {
+          'x-t-token': appToken,
+        },
+      });
+
+      if (response.ok) {
+        console.log(`✅ API路径成功: ${apiPath}`);
+        break;
+      } else {
+        console.log(`❌ API路径失败: ${apiPath}, 状态: ${response.status}`);
+        const errorText = await response.text();
+        console.log(`错误详情: ${errorText}`);
+        lastError = new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+      }
+    } catch (error) {
+      console.log(`❌ API路径异常: ${apiPath}`, error);
+      lastError = error;
+    }
+  }
+
+  if (!response || !response.ok) {
+    throw lastError || new Error('所有API路径都失败了');
   }
 
   const result = await response.json();
@@ -208,16 +235,45 @@ export async function updateFile(
     formData.append('remark', data.remark);
   }
 
-  const response = await fetch(`${API_BASE_URL}/cms/file/updateFile/${id}`, {
-    method: 'PUT',
-    headers: {
-      'x-t-token': appToken,
-    },
-    body: formData,
-  });
+  // 尝试不同的API路径
+  const apiPaths = [
+    `/cms/file/updateFile/${id}`,
+    `/cms/file/${id}`,
+    `/file/updateFile/${id}`,
+    `/file/${id}`
+  ];
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+  let response;
+  let lastError;
+
+  for (const apiPath of apiPaths) {
+    try {
+      console.log(`尝试更新API路径: ${API_BASE_URL}${apiPath}`);
+      response = await fetch(`${API_BASE_URL}${apiPath}`, {
+        method: 'PUT',
+        headers: {
+          'x-t-token': appToken,
+        },
+        body: formData,
+      });
+
+      if (response.ok) {
+        console.log(`✅ 更新API路径成功: ${apiPath}`);
+        break;
+      } else {
+        console.log(`❌ 更新API路径失败: ${apiPath}, 状态: ${response.status}`);
+        const errorText = await response.text();
+        console.log(`错误详情: ${errorText}`);
+        lastError = new Error(`HTTP error! status: ${response.status} - ${errorText}`);
+      }
+    } catch (error) {
+      console.log(`❌ 更新API路径异常: ${apiPath}`, error);
+      lastError = error;
+    }
+  }
+
+  if (!response || !response.ok) {
+    throw lastError || new Error('所有更新API路径都失败了');
   }
 
   const result = await response.json();

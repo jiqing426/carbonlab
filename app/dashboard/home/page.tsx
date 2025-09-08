@@ -150,6 +150,47 @@ export default function DashboardHomePage() {
   const [selectedSmsRecord, setSelectedSmsRecord] = useState<SmsRecord | null>(null)
   const [showSmsDetail, setShowSmsDetail] = useState(false)
 
+  // 资料库统计数据
+  const [resourcesStats, setResourcesStats] = useState({
+    totalRepositories: 0,
+    totalDocuments: 0,
+    supportedTypes: 0
+  })
+
+  // 加载资料库统计数据
+  const loadResourcesStats = async () => {
+    try {
+      // 从 localStorage 获取资料库数据
+      const repositoriesData = localStorage.getItem('mockRepositories')
+      const repositories = repositoriesData ? JSON.parse(repositoriesData) : []
+      
+      let totalDocuments = 0
+      let supportedTypes = new Set()
+      
+      // 计算每个资料库的文档数量和类型
+      for (const repo of repositories) {
+        const filesData = localStorage.getItem(`files_${repo.id}`)
+        if (filesData) {
+          const files = JSON.parse(filesData)
+          totalDocuments += files.length
+          
+          // 收集支持的类型
+          if (repo.folderType && Array.isArray(repo.folderType)) {
+            repo.folderType.forEach((type: string) => supportedTypes.add(type))
+          }
+        }
+      }
+      
+      setResourcesStats({
+        totalRepositories: repositories.length,
+        totalDocuments,
+        supportedTypes: supportedTypes.size
+      })
+    } catch (error) {
+      console.error('Failed to load resources stats:', error)
+    }
+  }
+
   // 角色类型选项
   const roleTypes = [
     { value: 'teacher', label: '教师' },
@@ -168,7 +209,7 @@ export default function DashboardHomePage() {
 
 
 
-  // 当切换到用户管理、角色管理、App Token管理或短信管理时加载数据
+  // 当切换到用户管理、角色管理、App Token管理、短信管理或资料库管理时加载数据
   useEffect(() => {
     if (activeMenu === 'user-management') {
       console.log('切换到用户管理，开始加载数据')
@@ -183,6 +224,9 @@ export default function DashboardHomePage() {
     } else if (activeMenu === 'sms-management') {
       console.log('切换到短信管理，开始加载数据')
       fetchSmsRecords()
+    } else if (activeMenu === 'resources-management') {
+      console.log('切换到资料库管理，开始加载统计数据')
+      loadResourcesStats()
     }
   }, [activeMenu])
 
@@ -190,16 +234,16 @@ export default function DashboardHomePage() {
 
 
 
-  // 如果未登录，重定向到首页
+  // 如果未登录，重定向到登录页面
   if (!isLoggedIn || !user) {
-    router.push('/')
+    router.push('/login')
     return null
   }
 
   const handleLogout = () => {
     logout()
     toast.success('已退出登录')
-    router.push('/')
+    router.push('/login')
   }
 
 
@@ -1047,6 +1091,11 @@ export default function DashboardHomePage() {
         icon: Users
       },
       {
+        id: 'resources-management',
+        title: '资料库管理',
+        icon: FileText
+      },
+      {
         id: 'app-token-management',
         title: 'App Token管理',
         icon: Key
@@ -1081,11 +1130,6 @@ export default function DashboardHomePage() {
         id: 'learning-progress',
         title: '学习进度',
         icon: BookOpen
-      },
-      {
-        id: 'resources-management',
-        title: '资料库管理',
-        icon: FileText
       }
     ] : []),
 
@@ -3191,7 +3235,7 @@ export default function DashboardHomePage() {
                     <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <FileText className="w-8 h-8 text-blue-600" />
                     </div>
-                    <p className="text-2xl font-bold text-blue-900">4</p>
+                    <p className="text-2xl font-bold text-blue-900">{resourcesStats.totalRepositories}</p>
                     <p className="text-sm text-gray-600">资料库总数</p>
                   </div>
                 </CardContent>
@@ -3203,7 +3247,7 @@ export default function DashboardHomePage() {
                     <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <BookOpen className="w-8 h-8 text-green-600" />
                     </div>
-                    <p className="text-2xl font-bold text-green-900">12</p>
+                    <p className="text-2xl font-bold text-green-900">{resourcesStats.totalDocuments}</p>
                     <p className="text-sm text-gray-600">文档总数</p>
                   </div>
                 </CardContent>
@@ -3215,7 +3259,7 @@ export default function DashboardHomePage() {
                     <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
                       <Users className="w-8 h-8 text-purple-600" />
                     </div>
-                    <p className="text-2xl font-bold text-purple-900">8</p>
+                    <p className="text-2xl font-bold text-purple-900">{resourcesStats.supportedTypes}</p>
                     <p className="text-sm text-gray-600">支持类型</p>
                   </div>
                 </CardContent>

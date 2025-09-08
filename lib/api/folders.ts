@@ -116,17 +116,47 @@ export async function createFolder(
     throw new Error('No valid app token');
   }
 
-  const response = await fetch(`${API_BASE_URL}/cms/folder/create`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-t-token': appToken,
-    },
-    body: JSON.stringify(data),
-  });
+  // 尝试多个可能的端点
+  const possibleEndpoints = [
+    '/cms/folder/create',
+    '/cms/folder',
+    '/api/cms/folder/create',
+    '/api/cms/folder',
+    '/folder/create',
+    '/folder'
+  ];
 
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
+  let response: Response | null = null;
+  let lastError: Error | null = null;
+
+  for (const endpoint of possibleEndpoints) {
+    try {
+      console.log(`🔄 尝试端点: ${API_BASE_URL}${endpoint}`);
+      
+      response = await fetch(`${API_BASE_URL}${endpoint}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-t-token': appToken,
+        },
+        body: JSON.stringify(data),
+      });
+
+      if (response.ok) {
+        console.log(`✅ 成功使用端点: ${endpoint}`);
+        break;
+      } else {
+        console.log(`❌ 端点 ${endpoint} 失败: ${response.status}`);
+        lastError = new Error(`HTTP error! status: ${response.status}`);
+      }
+    } catch (error) {
+      console.log(`❌ 端点 ${endpoint} 异常:`, error);
+      lastError = error instanceof Error ? error : new Error('Unknown error');
+    }
+  }
+
+  if (!response || !response.ok) {
+    throw lastError || new Error('All endpoints failed');
   }
 
   const result = await response.json();

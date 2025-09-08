@@ -116,7 +116,7 @@ export async function createRepository(
     throw new Error('No valid app token');
   }
 
-  const response = await fetch(`${API_BASE_URL}/cms/folder/create`, {
+  const response = await fetch(`${API_BASE_URL}/cms/folder/createFolder`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -148,7 +148,8 @@ export async function updateRepository(
     throw new Error('No valid app token');
   }
 
-  const response = await fetch(`${API_BASE_URL}/cms/folder/update/${id}`, {
+  // 使用正确的 API 路径：/cms/folder/updateFolder/{id}
+  const response = await fetch(`${API_BASE_URL}/cms/folder/updateFolder/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -179,7 +180,7 @@ export async function deleteRepository(
     throw new Error('No valid app token');
   }
 
-  const response = await fetch(`${API_BASE_URL}/cms/folder/delete/${id}`, {
+  const response = await fetch(`${API_BASE_URL}/cms/folder/deleteFolder/${id}`, {
     method: 'DELETE',
     headers: {
       'x-t-token': appToken,
@@ -205,10 +206,9 @@ export async function getRepository(
     throw new Error('No valid app token');
   }
 
-  const response = await fetch(`${API_BASE_URL}/cms/folder/${id}`, {
+  const response = await fetch(`${API_BASE_URL}/cms/folder/getFolderById/${id}`, {
     method: 'GET',
     headers: {
-      'Content-Type': 'application/json',
       'x-t-token': appToken,
     },
   });

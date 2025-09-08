@@ -1,7 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
-import { Document, Page, pdfjs } from "react-pdf";
+import React, { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -11,13 +10,9 @@ import {
   ChevronLeft,
   ChevronRight,
   Loader2,
-  AlertCircle,
+  Download,
+  ExternalLink,
 } from "lucide-react";
-
-// 设置 PDF.js worker
-if (typeof window !== "undefined") {
-  pdfjs.GlobalWorkerOptions.workerSrc = `/pdf.worker.min.js`;
-}
 
 interface PDFViewerProps {
   pdfUri: string;
@@ -25,32 +20,15 @@ interface PDFViewerProps {
 }
 
 export default function PDFViewer({ pdfUri, title }: PDFViewerProps) {
-  const [numPages, setNumPages] = useState<number>(0);
-  const [pageNumber, setPageNumber] = useState(1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [scale, setScale] = useState(1.0);
+  const [isClient, setIsClient] = useState(false);
 
-  // 处理文档加载成功
-  const onDocumentLoadSuccess = (pdf: any) => {
-    console.log("PDF加载成功，页数:", pdf.numPages);
-    setNumPages(pdf.numPages);
-    setLoading(false);
-    setError(null);
-  };
-
-  // 处理加载错误
-  const onDocumentLoadError = (error: Error) => {
-    console.error("PDF加载失败:", error);
-    setError("PDF加载失败，请稍后重试");
-    setLoading(false);
-  };
-
-  // 页面导航
-  const goToPage = (page: number) => {
-    const newPage = Math.max(1, Math.min(page, numPages));
-    setPageNumber(newPage);
-  };
+  // 确保组件只在客户端渲染
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   // 缩放控制
   const zoom = (delta: number) => {
@@ -60,39 +38,51 @@ export default function PDFViewer({ pdfUri, title }: PDFViewerProps) {
     });
   };
 
+  // 下载PDF
+  const downloadPDF = () => {
+    const link = document.createElement('a');
+    link.href = pdfUri;
+    link.download = title || 'document.pdf';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // 在新窗口中打开PDF
+  const openInNewWindow = () => {
+    window.open(pdfUri, '_blank');
+  };
+
+  // 处理iframe加载
+  const handleIframeLoad = () => {
+    setLoading(false);
+    setError(null);
+  };
+
+  const handleIframeError = () => {
+    setError("PDF加载失败，请稍后重试");
+    setLoading(false);
+  };
+
+  // 如果不在客户端环境，显示加载状态
+  if (!isClient) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <div className="text-center">
+          <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">PDF查看器初始化中...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col h-full">
       {/* 工具栏 */}
       <div className="flex items-center gap-2 p-2 bg-muted border-b">
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => goToPage(pageNumber - 1)}
-          disabled={pageNumber <= 1}
-        >
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-
         <div className="flex items-center gap-2">
-          <Input
-            type="number"
-            min={1}
-            max={numPages}
-            value={pageNumber}
-            onChange={e => goToPage(parseInt(e.target.value) || 1)}
-            className="w-16 text-center"
-          />
-          <span className="text-sm text-muted-foreground">/ {numPages}</span>
+          <span className="text-sm font-medium">{title}</span>
         </div>
-
-        <Button
-          variant="outline"
-          size="icon"
-          onClick={() => goToPage(pageNumber + 1)}
-          disabled={pageNumber >= numPages}
-        >
-          <ChevronRight className="h-4 w-4" />
-        </Button>
 
         <div className="ml-auto flex items-center gap-2">
           <Button
@@ -100,6 +90,7 @@ export default function PDFViewer({ pdfUri, title }: PDFViewerProps) {
             size="icon"
             onClick={() => zoom(-0.1)}
             disabled={scale <= 0.5}
+            title="缩小"
           >
             <ZoomOut className="h-4 w-4" />
           </Button>
@@ -111,90 +102,65 @@ export default function PDFViewer({ pdfUri, title }: PDFViewerProps) {
             size="icon"
             onClick={() => zoom(0.1)}
             disabled={scale >= 2.5}
+            title="放大"
           >
             <ZoomIn className="h-4 w-4" />
+          </Button>
+          
+          <div className="w-px h-6 bg-border mx-2" />
+          
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={downloadPDF}
+            title="下载PDF"
+          >
+            <Download className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={openInNewWindow}
+            title="在新窗口中打开"
+          >
+            <ExternalLink className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
       {/* PDF 显示区域 */}
-      <div className="flex-1 overflow-y-auto p-4">
-        <div className="flex justify-center">
-          {loading && (
-            <div className="w-full max-w-4xl flex flex-col items-center gap-4">
-              <Skeleton className="w-full h-[450px]" />
-              <div className="flex items-center gap-2">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm text-muted-foreground">
-                  正在加载PDF文档...
-                </span>
-              </div>
+      <div className="flex-1 overflow-hidden">
+        {loading && (
+          <div className="w-full h-full flex flex-col items-center justify-center gap-4">
+            <Skeleton className="w-full h-full" />
+            <div className="flex items-center gap-2">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              <span className="text-sm text-muted-foreground">
+                加载中...
+              </span>
             </div>
-          )}
-          
-          {error && (
-            <div className="w-full max-w-4xl flex flex-col items-center gap-4 p-8">
-              <AlertCircle className="h-16 w-16 text-red-500" />
-              <div className="text-center">
-                <h3 className="text-lg font-semibold text-red-800 mb-2">PDF加载失败</h3>
-                <p className="text-red-600 mb-4">{error}</p>
-                <div className="text-sm text-gray-600">
-                  <p>可能的原因：</p>
-                  <ul className="list-disc list-inside mt-2 space-y-1">
-                    <li>PDF文件不存在或路径错误</li>
-                    <li>PDF.js worker文件未正确加载</li>
-                    <li>网络连接问题</li>
-                    <li>PDF文件损坏</li>
-                  </ul>
-                </div>
-              </div>
+          </div>
+        )}
+        
+        {error ? (
+          <div className="w-full h-full flex items-center justify-center">
+            <div className="text-center">
+              <div className="text-destructive text-lg mb-2">{error}</div>
+              <Button onClick={() => window.location.reload()}>
+                重新加载
+              </Button>
             </div>
-          )}
-
-          {!loading && !error && (
-            <Document
-              file={pdfUri}
-              onLoadSuccess={onDocumentLoadSuccess}
-              onLoadError={onDocumentLoadError}
-              loading={
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span className="text-sm text-muted-foreground">
-                    初始化PDF文档...
-                  </span>
-                </div>
-              }
-              error={
-                <div className="text-center py-8">
-                  <AlertCircle className="h-16 w-16 text-red-500 mx-auto mb-4" />
-                  <h3 className="text-lg font-semibold text-red-800 mb-2">PDF文档加载失败</h3>
-                  <p className="text-red-600">请检查PDF文件格式是否正确</p>
-                </div>
-              }
-            >
-              <Page
-                pageNumber={pageNumber}
-                renderTextLayer={false}
-                renderAnnotationLayer={false}
-                scale={scale}
-                loading={
-                  <div className="flex items-center gap-2">
-                    <Loader2 className="h-4 w-4 animate-spin" />
-                    <span className="text-sm text-muted-foreground">
-                      正在渲染第 {pageNumber} 页...
-                    </span>
-                  </div>
-                }
-                error={
-                  <div className="text-center py-4">
-                    <AlertCircle className="h-8 w-8 text-red-500 mx-auto mb-2" />
-                    <p className="text-red-600 text-sm">页面渲染失败</p>
-                  </div>
-                }
-              />
-            </Document>
-          )}
-        </div>
+          </div>
+        ) : (
+          <iframe
+            src={`${pdfUri}#toolbar=1&navpanes=1&scrollbar=1&zoom=${Math.round(scale * 100)}`}
+            className="w-full h-full border-0"
+            onLoad={handleIframeLoad}
+            onError={handleIframeError}
+            title={title}
+            style={{ transform: `scale(${scale})`, transformOrigin: 'top left' }}
+          />
+        )}
       </div>
     </div>
   );

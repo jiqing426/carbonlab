@@ -15,6 +15,11 @@ import {
   ArrowLeft,
   Calendar,
   User,
+  RefreshCw,
+  Cloud,
+  CheckCircle,
+  XCircle,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -93,7 +98,88 @@ const fileTypeOptions = [
     description: 'DOC, DOCX 等格式',
     color: 'text-orange-600',
   },
+  {
+    value: 'EXCEL',
+    label: '表格',
+    icon: FileText,
+    description: 'XLS, XLSX 等格式',
+    color: 'text-emerald-600',
+  },
+  {
+    value: 'PRESENTATION',
+    label: '演示文稿',
+    icon: FileText,
+    description: 'PPT, PPTX 等格式',
+    color: 'text-pink-600',
+  },
+  {
+    value: 'TEXT',
+    label: '文本',
+    icon: FileText,
+    description: 'TXT 等格式',
+    color: 'text-gray-600',
+  },
+  {
+    value: 'ARCHIVE',
+    label: '压缩包',
+    icon: FileText,
+    description: 'ZIP, RAR 等格式',
+    color: 'text-amber-600',
+  },
 ];
+
+// 自动检测文件类型
+const detectFileType = (fileName: string, fileType?: string): string => {
+  // 如果已经有文件类型，优先使用
+  if (fileType && fileType !== 'UNKNOWN') {
+    return fileType;
+  }
+  
+  // 根据文件扩展名自动检测
+  const extension = fileName.toLowerCase().split('.').pop();
+  
+  switch (extension) {
+    case 'pdf':
+      return 'PDF';
+    case 'doc':
+    case 'docx':
+      return 'DOC';
+    case 'xls':
+    case 'xlsx':
+      return 'EXCEL';
+    case 'ppt':
+    case 'pptx':
+      return 'PRESENTATION';
+    case 'jpg':
+    case 'jpeg':
+    case 'png':
+    case 'gif':
+    case 'webp':
+      return 'IMAGE';
+    case 'mp3':
+    case 'wav':
+    case 'aac':
+      return 'AUDIO';
+    case 'mp4':
+    case 'avi':
+    case 'mov':
+      return 'VIDEO';
+    case 'md':
+      return 'MARKDOWN';
+    case 'txt':
+      return 'TEXT';
+    case 'zip':
+    case 'rar':
+    case '7z':
+      return 'ARCHIVE';
+    default:
+      // 如果文件名包含http或www，认为是链接
+      if (fileName.includes('http') || fileName.includes('www')) {
+        return 'LINK';
+      }
+      return 'UNKNOWN';
+  }
+};
 
 // 资料库接口类型
 interface Repository {
@@ -119,6 +205,7 @@ interface FileData {
   uploader: string;
   description?: string;
   url?: string;
+  displayTime?: string; // 显示时间
 }
 
 // 模拟资料库数据
@@ -223,7 +310,8 @@ export default function RepositoryDetail() {
   const [newFile, setNewFile] = useState({
     fileName: '',
     description: '',
-    url: ''
+    url: '',
+    displayTime: ''
   });
 
   const [editRepo, setEditRepo] = useState({
@@ -305,13 +393,38 @@ export default function RepositoryDetail() {
             sampleFiles = [
               {
                 id: 'data-1',
-                fileName: '2025年可再生能源容量统计数据（IRENA）',
-                description: '全球可再生能源数据',
-                url: 'https://www.irena.org/Publications/2025/Mar/Renewable-capacity-statistics-2025',
+                fileName: '2025年6月份能源生产情况',
+                description: '来源:国家统计局',
+                url: 'https://www.stats.gov.cn/sj/zxfbhjd/202507/t20250715_1960407.html',
                 fileType: 'LINK',
                 repositoryId: repositoryId,
                 createdAt: '2025-07-18T10:00:00Z',
                 updatedAt: '2025-07-18T10:00:00Z',
+                displayTime: '2025-07-18',
+                uploader: user?.username || '未知用户'
+              },
+              {
+                id: 'data-2',
+                fileName: '2025年第二季度中国碳价指数报告',
+                description: '全国及区域碳市场价格走势分析',
+                url: 'https://www.example.com/carbon-price-index-q2-2025',
+                fileType: 'PDF',
+                repositoryId: repositoryId,
+                createdAt: '2025-07-15T10:00:00Z',
+                updatedAt: '2025-07-15T10:00:00Z',
+                displayTime: '2025-07-15',
+                uploader: user?.username || '未知用户'
+              },
+              {
+                id: 'data-3',
+                fileName: '重点行业碳排放监测周报（7.10-7.16）',
+                description: '钢铁、电力、建材等行业碳排放数据',
+                url: 'https://www.example.com/carbon-monitoring-weekly',
+                fileType: 'EXCEL',
+                repositoryId: repositoryId,
+                createdAt: '2025-07-17T10:00:00Z',
+                updatedAt: '2025-07-17T10:00:00Z',
+                displayTime: '2025-07-17',
                 uploader: user?.username || '未知用户'
               }
             ];
@@ -320,13 +433,50 @@ export default function RepositoryDetail() {
             sampleFiles = [
               {
                 id: 'report-1',
-                fileName: '全国碳市场发展报告 2024',
-                description: '中国碳市场年度报告',
+                fileName: '2025中国碳市场年度发展报告',
+                description: '中国碳市场年度发展报告，涵盖市场运行、政策解读、发展趋势等',
                 url: 'https://www.mee.gov.cn/ywdt/xwfb/202407/t20240722_1082192.shtml',
                 fileType: 'PDF',
                 repositoryId: repositoryId,
-                createdAt: '2025-07-18T10:00:00Z',
-                updatedAt: '2025-07-18T10:00:00Z',
+                createdAt: '2025-06-30T10:00:00Z',
+                updatedAt: '2025-06-30T10:00:00Z',
+                displayTime: '2025-06-30',
+                uploader: user?.username || '未知用户'
+              },
+              {
+                id: 'report-2',
+                fileName: '重点行业碳排放核算与报告指南',
+                description: '重点行业碳排放核算方法、报告要求和实施指南',
+                url: 'https://www.mee.gov.cn/ywdt/xwfb/202406/t20240615_1080000.shtml',
+                fileType: 'PDF',
+                repositoryId: repositoryId,
+                createdAt: '2025-06-15T10:00:00Z',
+                updatedAt: '2025-06-15T10:00:00Z',
+                displayTime: '2025-06-15',
+                uploader: user?.username || '未知用户'
+              },
+              {
+                id: 'report-3',
+                fileName: '企业碳中和路径与实践案例研究',
+                description: '企业碳中和实施路径、典型案例分析和最佳实践',
+                url: 'https://www.ndrc.gov.cn/xxgk/zcfb/tz/202505/t20250528_1360000.html',
+                fileType: 'PDF',
+                repositoryId: repositoryId,
+                createdAt: '2025-05-28T10:00:00Z',
+                updatedAt: '2025-05-28T10:00:00Z',
+                displayTime: '2025-05-28',
+                uploader: user?.username || '未知用户'
+              },
+              {
+                id: 'report-4',
+                fileName: '区域碳达峰碳中和实施路径研究',
+                description: '区域碳达峰碳中和目标设定、实施路径和政策建议',
+                url: 'https://www.gov.cn/zhengce/2025-05/10/content_1234567.html',
+                fileType: 'PDF',
+                repositoryId: repositoryId,
+                createdAt: '2025-05-10T10:00:00Z',
+                updatedAt: '2025-05-10T10:00:00Z',
+                displayTime: '2025-05-10',
                 uploader: user?.username || '未知用户'
               }
             ];
@@ -469,7 +619,8 @@ export default function RepositoryDetail() {
         uploadTime: new Date().toISOString(),
         uploader: user?.username || '未知用户',
         description: newFile.description.trim(),
-        url: newFile.url.trim() || '#'
+        url: newFile.url.trim() || '#',
+        displayTime: newFile.displayTime || new Date().toISOString().split('T')[0]
       };
 
       // 更新本地状态
@@ -483,7 +634,8 @@ export default function RepositoryDetail() {
       setNewFile({
         fileName: '',
         description: '',
-        url: ''
+        url: '',
+        displayTime: ''
       });
       
       toast.success('文件添加成功');
@@ -573,7 +725,8 @@ export default function RepositoryDetail() {
               ...file,
               fileName: editingFile.fileName.trim(),
               description: editingFile.description?.trim() || '',
-              url: editingFile.url?.trim() || '#'
+              url: editingFile.url?.trim() || '#',
+              displayTime: editingFile.displayTime || file.displayTime
             }
           : file
       );
@@ -582,6 +735,16 @@ export default function RepositoryDetail() {
       
       // 保存到 localStorage
       localStorage.setItem(`files_${repositoryId}`, JSON.stringify(updatedFiles));
+      
+      // 如果修改了显示时间，调用API更新
+      if (editingFile.displayTime && editingFile.displayTime !== files.find(f => f.id === editingFile.id)?.displayTime) {
+        try {
+          const { contentSyncService } = await import('@/lib/services/content-sync-service');
+          await contentSyncService.updateFileDisplayTime(repositoryId, editingFile.id, editingFile.displayTime);
+        } catch (apiError) {
+          console.warn('API更新显示时间失败，但本地数据已保存:', apiError);
+        }
+      }
       
       setShowEditFileDialog(false);
       setEditingFile(null);
@@ -610,6 +773,7 @@ export default function RepositoryDetail() {
       console.error('Failed to delete file:', error);
     }
   };
+
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -722,11 +886,17 @@ export default function RepositoryDetail() {
                         <Calendar className='w-4 h-4' />
                         <span>更新时间：{new Date(repository.updatedAt).toLocaleDateString('zh-CN')}</span>
                       </div>
+                      {(repository as any).lastSyncTime && (
+                        <div className='flex items-center space-x-2'>
+                          <Clock className='w-4 h-4' />
+                          <span>最后同步：{new Date((repository as any).lastSyncTime).toLocaleString('zh-CN')}</span>
+                        </div>
+                      )}
                     </div>
                   </div>
                   <div>
                     <h4 className='font-medium text-gray-900 mb-2'>支持的文件类型</h4>
-                    <div className='flex flex-wrap gap-2'>
+                    <div className='flex flex-wrap gap-2 mb-4'>
                       {repository.folderType.map(type => {
                         const option = fileTypeOptions.find(opt => opt.value === type);
                         return option ? (
@@ -736,6 +906,35 @@ export default function RepositoryDetail() {
                           </Badge>
                         ) : null;
                       })}
+                    </div>
+                    <h4 className='font-medium text-gray-900 mb-2'>同步状态</h4>
+                    <div className='flex items-center space-x-2'>
+                      {(repository as any).syncStatus === 'synced' ? (
+                        <Badge variant='default' className='bg-green-100 text-green-800 border-green-200'>
+                          <CheckCircle className='w-3 h-3 mr-1' />
+                          已同步
+                        </Badge>
+                      ) : (repository as any).syncStatus === 'error' ? (
+                        <Badge variant='destructive'>
+                          <XCircle className='w-3 h-3 mr-1' />
+                          同步失败
+                        </Badge>
+                      ) : (repository as any).syncStatus === 'pending' ? (
+                        <Badge variant='secondary' className='bg-yellow-100 text-yellow-800 border-yellow-200'>
+                          <Clock className='w-3 h-3 mr-1' />
+                          待同步
+                        </Badge>
+                      ) : (
+                        <Badge variant='outline'>
+                          <Cloud className='w-3 h-3 mr-1' />
+                          未同步
+                        </Badge>
+                      )}
+                      {(repository as any).taleFolderId && (
+                        <span className='text-xs text-gray-500'>
+                          Tale ID: {(repository as any).taleFolderId}
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -806,7 +1005,15 @@ export default function RepositoryDetail() {
                       <TableRow key={file.id} className='hover:bg-gray-50'>
                         <TableCell>
                           <div className='flex items-center space-x-3'>
-                            <FileText className='w-5 h-5 text-blue-600' />
+                            {(() => {
+                              const detectedType = detectFileType(file.fileName, file.fileType);
+                              const option = fileTypeOptions.find(opt => opt.value === detectedType);
+                              return option ? (
+                                <option.icon className={`w-5 h-5 ${option.color}`} />
+                              ) : (
+                                <FileText className='w-5 h-5 text-gray-600' />
+                              );
+                            })()}
                             <div>
                               <span className='font-medium text-gray-900'>
                                 {file.fileName}
@@ -821,7 +1028,8 @@ export default function RepositoryDetail() {
                         </TableCell>
                         <TableCell>
                           {(() => {
-                            const option = fileTypeOptions.find(opt => opt.value === file.fileType);
+                            const detectedType = detectFileType(file.fileName, file.fileType);
+                            const option = fileTypeOptions.find(opt => opt.value === detectedType);
                             return option ? (
                               <Badge variant='secondary' className='text-xs'>
                                 <option.icon className={`w-3 h-3 mr-1 ${option.color}`} />
@@ -829,7 +1037,7 @@ export default function RepositoryDetail() {
                               </Badge>
                             ) : (
                               <Badge variant='outline' className='text-xs'>
-                                {file.fileType}
+                                {detectedType}
                               </Badge>
                             );
                           })()}
@@ -855,7 +1063,15 @@ export default function RepositoryDetail() {
                                className='h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
                                title='查看文件'
                              >
-                               <FileText className='h-4 w-4' />
+                               {(() => {
+                                 const detectedType = detectFileType(file.fileName, file.fileType);
+                                 const option = fileTypeOptions.find(opt => opt.value === detectedType);
+                                 return option ? (
+                                   <option.icon className='h-4 w-4' />
+                                 ) : (
+                                   <FileText className='h-4 w-4' />
+                                 );
+                               })()}
                              </Button>
                              <Button
                                variant='ghost'
@@ -951,6 +1167,19 @@ export default function RepositoryDetail() {
                   }
                   placeholder='输入文件链接（可选）'
                 />
+              </div>
+              <div className='space-y-2'>
+                <Label htmlFor='displayTime'>显示时间</Label>
+                <Input
+                  id='displayTime'
+                  type='date'
+                  value={newFile.displayTime}
+                  onChange={e =>
+                    setNewFile({ ...newFile, displayTime: e.target.value })
+                  }
+                  placeholder='选择显示时间'
+                />
+                <p className='text-xs text-gray-500'>此时间将显示在前端页面上</p>
               </div>
             </div>
             <DialogFooter>
@@ -1088,6 +1317,19 @@ export default function RepositoryDetail() {
                    }
                    placeholder='输入文件链接'
                  />
+               </div>
+               <div className='space-y-2'>
+                 <Label htmlFor='editDisplayTime'>显示时间</Label>
+                 <Input
+                   id='editDisplayTime'
+                   type='date'
+                   value={editingFile?.displayTime ? editingFile.displayTime.split('T')[0] : ''}
+                   onChange={e =>
+                     setEditingFile(prev => prev ? { ...prev, displayTime: e.target.value } : null)
+                   }
+                   placeholder='选择显示时间'
+                 />
+                 <p className='text-xs text-gray-500'>此时间将显示在前端页面上</p>
                </div>
              </div>
              <DialogFooter>

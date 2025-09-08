@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
-import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye } from "lucide-react"
+import { Plus, Search, Filter, MoreHorizontal, Edit, Trash2, Eye, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
@@ -86,26 +86,26 @@ export default function UsersPage() {
 
   return (
     <>
-      <div className='flex h-16 items-center border-b px-4'>
+      <div className='flex h-16 items-center border-b bg-gradient-to-r from-purple-50 to-pink-50 px-4 shadow-sm'>
         <SidebarTrigger />
         <Breadcrumb />
       </div>
-      <div className="w-full max-w-7xl mx-auto space-y-6 p-6">
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-purple-50/30 to-pink-50/30 w-full max-w-7xl mx-auto space-y-6 p-6">
         {/* 头部 */}
         <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">用户管理</h1>
-            <p className="text-gray-600">管理系统中的所有用户账户</p>
+          <div className='space-y-2'>
+            <h1 className="text-4xl font-bold gradient-text-purple tracking-tight">用户管理</h1>
+            <p className="text-gray-600 text-lg">管理系统中的所有用户账户</p>
           </div>
-          <Button>
+          <Button className='bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 shadow-lg hover:shadow-xl transition-all duration-300 transform hover:scale-105'>
             <Plus className="h-4 w-4 mr-2" />
             添加用户
           </Button>
         </div>
 
         {/* 搜索和过滤 */}
-        <Card>
-          <CardContent className="p-4">
+        <Card className='shadow-lg border-0 bg-white/80 backdrop-blur-sm'>
+          <CardContent className="p-4 bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-lg">
             <div className="flex items-center gap-4">
               <div className="flex-1 relative">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
@@ -133,16 +133,19 @@ export default function UsersPage() {
         </Card>
 
         {/* 用户列表 */}
-        <Card>
-          <CardHeader>
-            <CardTitle>用户列表 ({filteredUsers.length})</CardTitle>
+        <Card className='shadow-lg border-0 bg-white/80 backdrop-blur-sm'>
+          <CardHeader className='bg-gradient-to-r from-purple-50 to-pink-50 rounded-t-lg'>
+            <CardTitle className='text-xl font-semibold text-gray-800 flex items-center gap-2'>
+              <Users className='h-5 w-5 text-purple-600' />
+              用户列表 ({filteredUsers.length})
+            </CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
               {filteredUsers.map((user) => (
                 <div
                   key={user.id}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
+                  className="flex items-center justify-between p-4 border-0 rounded-lg hover:bg-purple-50/50 transition-all duration-200 shadow-sm hover:shadow-md"
                 >
                   <div className="flex items-center gap-4">
                     <Avatar className="h-10 w-10">
@@ -176,22 +179,22 @@ export default function UsersPage() {
                   
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm">
+                      <Button variant="ghost" size="sm" className='hover:bg-purple-50 transition-all duration-200 hover:scale-105'>
                         <MoreHorizontal className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => handleViewUser(user.id)}>
+                    <DropdownMenuContent align="end" className='shadow-lg border-0 bg-white/95 backdrop-blur-sm'>
+                      <DropdownMenuItem onClick={() => handleViewUser(user.id)} className='hover:bg-blue-50 transition-colors'>
                         <Eye className="h-4 w-4 mr-2" />
                         查看详情
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
+                      <DropdownMenuItem className='hover:bg-green-50 transition-colors'>
                         <Edit className="h-4 w-4 mr-2" />
                         编辑
                       </DropdownMenuItem>
                       <DropdownMenuItem 
                         onClick={() => handleDeleteUser(user.id)}
-                        className="text-destructive"
+                        className="text-destructive hover:bg-red-50 transition-colors"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         删除

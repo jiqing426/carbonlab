@@ -42,9 +42,18 @@ import {
   ChevronLeft,
   ChevronRight,
   FolderOpen,
+  RefreshCw,
+  Cloud,
+  CheckCircle,
+  XCircle,
+  Clock,
+  ArrowLeftRight,
+  Shield,
 } from 'lucide-react';
 import { useUserStore } from '@/lib/stores/user-store';
 import { SidebarTrigger } from '@/components/ui/sidebar';
+import { Breadcrumb } from '@/components/breadcrumb';
+import { classSyncService, Class as ClassType } from '@/lib/services/class-sync-service';
 
 // 班级表单验证模式
 const classFormSchema = z.object({
@@ -67,6 +76,11 @@ interface Class {
   createdAt: string;
   status: 'ongoing' | 'completed' | 'pending';
   students: string[];
+  // 同步相关字段
+  taleGroupId?: string; // Tale 平台用户组 ID
+  lastSyncTime?: string; // 最后同步时间
+  syncStatus?: 'synced' | 'pending' | 'error'; // 同步状态
+  syncError?: string; // 同步错误信息
 }
 
 // 模拟班级数据
@@ -127,6 +141,8 @@ export default function ClassesPage() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [deletingClass, setDeletingClass] = useState<Class | null>(null);
   const [confirmClassName, setConfirmClassName] = useState('');
+  const [syncLoading, setSyncLoading] = useState(false);
+  const [syncStatus, setSyncStatus] = useState<Record<string, 'synced' | 'pending' | 'error'>>({});
   const pageSize = 10;
 
   const createForm = useForm<z.infer<typeof classFormSchema>>({
@@ -226,20 +242,51 @@ export default function ClassesPage() {
         remark: values.remark,
         createdAt: new Date().toISOString().split('T')[0],
         status: 'pending',
-        students: []
+        students: [],
+        syncStatus: 'pending'
       };
 
       const updatedClasses = [newClass, ...classes];
       setClasses(updatedClasses);
       saveClassesToStorage(updatedClasses);
 
-              toast.success(`新班级 "${values.name}" 已成功创建。`);
+      // 自动同步到 Tale 平台
+      try {
+        setSyncLoading(true);
+        const syncResult = await classSyncService.syncClassToTale(newClass);
+        
+        if (syncResult.success) {
+          // 更新班级的同步信息
+          const updatedClass = {
+            ...newClass,
+            taleGroupId: syncResult.data?.taleGroupId,
+            lastSyncTime: syncResult.data?.lastSyncTime,
+            syncStatus: 'synced' as const
+          };
+          
+          const finalClasses = updatedClasses.map(cls => 
+            cls.id === newClass.id ? updatedClass : cls
+          );
+          setClasses(finalClasses);
+          saveClassesToStorage(finalClasses);
+          
+          toast.success(`新班级 "${values.name}" 已成功创建并同步到 Tale 平台。`);
+        } else {
+          toast.warning(`班级 "${values.name}" 创建成功，但同步到 Tale 平台失败：${syncResult.message}`);
+        }
+      } catch (syncError) {
+        console.error('同步失败:', syncError);
+        toast.warning(`班级 "${values.name}" 创建成功，但同步到 Tale 平台失败`);
+      } finally {
+        setSyncLoading(false);
+      }
+
       createForm.reset();
       setIsCreateDialogOpen(false);
       loadData();
     } catch (error) {
       console.error('Failed to create class:', error);
-              toast.error('创建班级失败，请稍后重试');
+      toast.error('创建班级失败，请稍后重试');
     }
   };
 
@@ -251,6 +298,90 @@ export default function ClassesPage() {
   // 处理分页
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+  };
+
+  // 手动同步单个班级
+  const handleSyncClass = async (cls: Class) => {
+    try {
+      setSyncLoading(true);
+      setSyncStatus(prev => ({ ...prev, [cls.id]: 'pending' }));
+      
+      const syncResult = await classSyncService.syncClassToTale(cls);
+      
+      if (syncResult.success) {
+        // 更新班级的同步信息
+        const updatedClass = {
+          ...cls,
+          taleGroupId: syncResult.data?.taleGroupId || cls.taleGroupId,
+          lastSyncTime: syncResult.data?.lastSyncTime,
+          syncStatus: 'synced' as const
+        };
+        
+        const updatedClasses = classes.map(c => c.id === cls.id ? updatedClass : c);
+        setClasses(updatedClasses);
+        saveClassesToStorage(updatedClasses);
+        
+        setSyncStatus(prev => ({ ...prev, [cls.id]: 'synced' }));
+        toast.success(`班级 "${cls.name}" 同步成功`);
+      } else {
+        setSyncStatus(prev => ({ ...prev, [cls.id]: 'error' }));
+        toast.error(`同步失败：${syncResult.message}`);
+      }
+    } catch (error) {
+      console.error('同步失败:', error);
+      setSyncStatus(prev => ({ ...prev, [cls.id]: 'error' }));
+      toast.error('同步失败，请稍后重试');
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+
+
+  // 双向同步
+  const handleBidirectionalSync = async () => {
+    try {
+      setSyncLoading(true);
+      toast.info('开始双向同步班级数据...');
+      
+      const result = await classSyncService.syncBidirectional();
+      
+      if (result.success) {
+        // 更新本地班级列表
+        const syncedClasses = result.data?.pullResult?.data?.classes || classes;
+        setClasses(syncedClasses);
+        saveClassesToStorage(syncedClasses);
+        
+        toast.success(result.message);
+      } else {
+        toast.error(`双向同步失败：${result.message}`);
+      }
+    } catch (error) {
+      console.error('双向同步失败:', error);
+      toast.error('双向同步失败，请稍后重试');
+    } finally {
+      setSyncLoading(false);
+    }
+  };
+
+  // 检查数据一致性
+  const handleCheckConsistency = async () => {
+    try {
+      setSyncLoading(true);
+      const result = await classSyncService.checkDataConsistency();
+      
+      if (result.isConsistent) {
+        toast.success(`数据一致：本地 ${result.localCount} 个班级，远程 ${result.remoteCount} 个班级`);
+      } else {
+        toast.warning(`数据不一致：${result.inconsistencies.length} 个问题`);
+        console.log('数据不一致详情:', result.inconsistencies);
+      }
+    } catch (error) {
+      console.error('检查数据一致性失败:', error);
+      toast.error('检查数据一致性失败');
+    } finally {
+      setSyncLoading(false);
+    }
   };
 
   // 删除班级
@@ -272,6 +403,20 @@ export default function ClassesPage() {
     }
 
     try {
+      // 如果班级已同步到 Tale 平台，先删除用户组
+      if (deletingClass.taleGroupId) {
+        try {
+          const deleteResult = await classSyncService.deleteClassFromTale(deletingClass.taleGroupId);
+          if (!deleteResult.success) {
+            console.warn('删除 Tale 用户组失败:', deleteResult.message);
+            toast.warning('本地班级已删除，但 Tale 平台用户组删除失败');
+          }
+        } catch (error) {
+          console.error('删除 Tale 用户组失败:', error);
+          toast.warning('本地班级已删除，但 Tale 平台用户组删除失败');
+        }
+      }
+
       const updatedClasses = classes.filter(cls => cls.id !== deletingClass.id);
       setClasses(updatedClasses);
       saveClassesToStorage(updatedClasses);
@@ -320,23 +465,27 @@ export default function ClassesPage() {
 
   return (
     <>
-      <div className='flex h-16 items-center border-b px-4'>
+      <div className='flex h-16 items-center border-b bg-gradient-to-r from-green-50 to-emerald-50 px-4 shadow-sm'>
         <SidebarTrigger />
       </div>
-      <div className='w-full max-w-7xl mx-auto space-y-6 p-6'>
+      <div className='min-h-screen bg-gradient-to-br from-gray-50 via-green-50/30 to-emerald-50/30 w-full max-w-7xl mx-auto space-y-6 p-6'>
+        {/* 面包屑导航 */}
+        <div className='mb-4'>
+          <Breadcrumb />
+        </div>
         {/* 页面标题 */}
         <div className='space-y-2'>
-          <h1 className='text-2xl font-bold text-gray-900'>
+          <h1 className='text-4xl font-bold gradient-text-green tracking-tight'>
             {isCarbon ? '超级班级管理' : '班级管理'}
           </h1>
-          <p className='text-gray-600'>
+          <p className='text-gray-600 text-lg'>
             {isCarbon ? '您拥有超级权限，可以查看和管理所有班级信息' : '管理班级信息，分配学生，查看统计'}
           </p>
         </div>
 
         {/* 搜索和添加区域 */}
-        <Card>
-          <CardContent className='p-6'>
+        <Card className='shadow-lg border-0 bg-white/80 backdrop-blur-sm'>
+          <CardContent className='p-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-t-lg'>
             <div className='flex justify-between items-center gap-4'>
               {/* 搜索区域 */}
               <div className='flex items-center gap-2 flex-1'>
@@ -356,17 +505,36 @@ export default function ClassesPage() {
                 </Button>
               </div>
 
-              {/* 添加按钮 */}
-              <Dialog
-                open={isCreateDialogOpen}
-                onOpenChange={setIsCreateDialogOpen}
-              >
-                <DialogTrigger asChild>
-                  <Button>
-                    <PlusCircle className='mr-2 h-4 w-4' />
-                    添加新班级
-                  </Button>
-                </DialogTrigger>
+              {/* 操作按钮组 */}
+              <div className='flex items-center gap-2 flex-wrap'>
+                <Button
+                  variant='outline'
+                  onClick={handleBidirectionalSync}
+                  disabled={syncLoading}
+                  className='bg-purple-50 hover:bg-purple-100 text-purple-700 border-purple-200'
+                >
+                  <ArrowLeftRight className={`mr-2 h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
+                  双向同步
+                </Button>
+                <Button
+                  variant='outline'
+                  onClick={handleCheckConsistency}
+                  disabled={syncLoading}
+                  className='bg-orange-50 hover:bg-orange-100 text-orange-700 border-orange-200'
+                >
+                  <Shield className={`mr-2 h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
+                  检查一致性
+                </Button>
+                <Dialog
+                  open={isCreateDialogOpen}
+                  onOpenChange={setIsCreateDialogOpen}
+                >
+                  <DialogTrigger asChild>
+                    <Button>
+                      <PlusCircle className='mr-2 h-4 w-4' />
+                      添加新班级
+                    </Button>
+                  </DialogTrigger>
                 <DialogContent className='bg-background border-border'>
                   <DialogHeader>
                     <DialogTitle className='text-foreground'>
@@ -490,6 +658,7 @@ export default function ClassesPage() {
                   </Form>
                 </DialogContent>
               </Dialog>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -510,31 +679,34 @@ export default function ClassesPage() {
                 <div className='text-lg'>加载中...</div>
               </div>
             ) : (
-              <Table>
+              <Table className='border-0'>
                 <TableHeader>
-                  <TableRow className='bg-gray-50'>
-                    <TableHead className='font-medium text-gray-700'>
+                  <TableRow className='bg-gradient-to-r from-green-50 to-emerald-50 border-0'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       班级名称
                     </TableHead>
-                    <TableHead className='font-medium text-gray-700'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       描述
                     </TableHead>
-                    <TableHead className='font-medium text-gray-700'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       年级
                     </TableHead>
-                    <TableHead className='font-medium text-gray-700'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       学生数
                     </TableHead>
-                    <TableHead className='font-medium text-gray-700'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       状态
                     </TableHead>
-                    <TableHead className='font-medium text-gray-700'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       创建日期
                     </TableHead>
-                    <TableHead className='font-medium text-gray-700'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       备注
                     </TableHead>
-                    <TableHead className='font-medium text-gray-700'>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
+                      同步状态
+                    </TableHead>
+                    <TableHead className='font-semibold text-gray-800 border-0'>
                       操作
                     </TableHead>
                   </TableRow>
@@ -543,7 +715,7 @@ export default function ClassesPage() {
                   {paginatedClasses.length === 0 ? (
                     <TableRow>
                       <TableCell
-                        colSpan={8}
+                        colSpan={9}
                         className='text-center py-8 text-gray-500'
                       >
                         {searchTerm ? '未找到匹配的班级' : '暂无班级数据'}
@@ -551,7 +723,7 @@ export default function ClassesPage() {
                     </TableRow>
                   ) : (
                     paginatedClasses.map(cls => (
-                      <TableRow key={cls.id} className='hover:bg-gray-50'>
+                      <TableRow key={cls.id} className='hover:bg-green-50/50 transition-colors duration-200 border-0'>
                         <TableCell className='font-medium'>
                           {cls.name}
                         </TableCell>
@@ -576,11 +748,36 @@ export default function ClassesPage() {
                         <TableCell>{cls.remark || '-'}</TableCell>
                         <TableCell>
                           <div className='flex items-center gap-2'>
+                            {cls.syncStatus === 'synced' ? (
+                              <div className='flex items-center gap-1 text-green-600'>
+                                <CheckCircle className='h-4 w-4' />
+                                <span className='text-xs'>已同步</span>
+                              </div>
+                            ) : cls.syncStatus === 'pending' ? (
+                              <div className='flex items-center gap-1 text-yellow-600'>
+                                <Clock className='h-4 w-4' />
+                                <span className='text-xs'>待同步</span>
+                              </div>
+                            ) : cls.syncStatus === 'error' ? (
+                              <div className='flex items-center gap-1 text-red-600'>
+                                <XCircle className='h-4 w-4' />
+                                <span className='text-xs'>同步失败</span>
+                              </div>
+                            ) : (
+                              <div className='flex items-center gap-1 text-gray-500'>
+                                <Cloud className='h-4 w-4' />
+                                <span className='text-xs'>未同步</span>
+                              </div>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className='flex items-center gap-2'>
                             <Button
                               variant='ghost'
                               size='sm'
                               onClick={() => handleViewDetail(cls)}
-                              className='h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                              className='h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50 transition-all duration-200 hover:scale-105'
                               title='查看详情'
                             >
                               <Eye className='h-4 w-4' />
@@ -588,8 +785,18 @@ export default function ClassesPage() {
                             <Button
                               variant='ghost'
                               size='sm'
+                              onClick={() => handleSyncClass(cls)}
+                              disabled={syncLoading}
+                              className='h-8 w-8 p-0 text-green-600 hover:text-green-700 hover:bg-green-50 transition-all duration-200 hover:scale-105'
+                              title='同步到 Tale 平台'
+                            >
+                              <RefreshCw className={`h-4 w-4 ${syncLoading ? 'animate-spin' : ''}`} />
+                            </Button>
+                            <Button
+                              variant='ghost'
+                              size='sm'
                               onClick={() => handleDeleteClick(cls)}
-                              className='h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50'
+                              className='h-8 w-8 p-0 text-red-600 hover:text-red-700 hover:bg-red-50 transition-all duration-200 hover:scale-105'
                               title='删除'
                             >
                               <Trash2 className='h-4 w-4' />
