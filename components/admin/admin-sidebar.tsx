@@ -1,188 +1,83 @@
 "use client"
 
 import * as React from "react"
-import {
-  BookOpen,
-  Bot,
-  Command,
-  Frame,
-  LifeBuoy,
-  Map,
-  PieChart,
-  Send,
-  Settings2,
-  SquareTerminal,
-  Users,
-  FlaskConical,
-  GraduationCap,
-  BarChart3,
-  Shield,
-  Database,
-} from "lucide-react"
-
+import { useUserStore } from "@/lib/stores/user-store"
+import { getFilteredRouteGroups } from "@/lib/config/routes"
 import { NavMain } from "@/components/admin/nav-main"
-import { NavProjects } from "@/components/admin/nav-projects"
 import { NavSecondary } from "@/components/admin/nav-secondary"
 import { NavUser } from "@/components/admin/nav-user"
-import { TeamSwitcher } from "@/components/admin/team-switcher"
 import {
   Sidebar,
   SidebarContent,
   SidebarFooter,
-  SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
 } from "@/components/ui/sidebar"
 
-// 这是管理后台的数据结构
-const data = {
-  user: {
-    name: "管理员",
-    email: "admin@carbonlab.com",
-    avatar: "/avatars/admin.jpg",
-  },
-  teams: [
-    {
-      name: "碳实验室",
-      logo: Command,
-      plan: "管理后台",
-    },
-  ],
-  navMain: [
-    {
-      title: "实验管理",
-      url: "#",
-      icon: FlaskConical,
-      isActive: true,
-      items: [
-        {
-          title: "实验列表",
-          url: "/admin/experiments",
-        },
-        {
-          title: "实验分类",
-          url: "/admin/experiments/categories",
-        },
-      ],
-    },
-    {
-      title: "课程管理",
-      url: "#",
-      icon: GraduationCap,
-      items: [
-        {
-          title: "课程列表",
-          url: "/admin/courses",
-        },
-        {
-          title: "课程分类",
-          url: "/admin/courses/categories",
-        },
-      ],
-    },
-    {
-      title: "用户管理",
-      url: "#",
-      icon: Users,
-      items: [
-        {
-          title: "用户列表",
-          url: "/admin/users",
-        },
-        {
-          title: "角色管理",
-          url: "/admin/roles",
-        },
-        {
-          title: "权限管理",
-          url: "/admin/users/permissions",
-        },
-        {
-          title: "用户统计",
-          url: "/admin/users/analytics",
-        },
-      ],
-    },
-    {
-      title: "数据分析",
-      url: "#",
-      icon: BarChart3,
-      items: [
-        {
-          title: "使用统计",
-          url: "/admin/analytics/usage",
-        },
-        {
-          title: "实验报告",
-          url: "/admin/analytics/experiments",
-        },
-        {
-          title: "学习进度",
-          url: "/admin/analytics/progress",
-        },
-      ],
-    },
-  ],
-  navSecondary: [
-    {
-      title: "系统设置",
-      url: "/admin/settings",
-      icon: Settings2,
-    },
-    {
-      title: "数据备份",
-      url: "/admin/backup",
-      icon: Database,
-    },
-    {
-      title: "安全中心",
-      url: "/admin/security",
-      icon: Shield,
-    },
-    {
-      title: "帮助支持",
-      url: "/admin/support",
-      icon: LifeBuoy,
-    },
-  ],
-  projects: [
-    {
-      name: "碳监测模块",
-      url: "/admin/modules/carbon-monitor",
-      icon: Frame,
-    },
-    {
-      name: "碳核算模块",
-      url: "/admin/modules/carbon-calculate",
-      icon: PieChart,
-    },
-    {
-      name: "碳交易模块",
-      url: "/admin/modules/carbon-trading",
-      icon: Map,
-    },
-    {
-      name: "碳中和模块",
-      url: "/admin/modules/carbon-neutral",
-      icon: Bot,
-    },
-  ],
+// 管理员用户信息
+const adminUser = {
+  name: "管理员",
+  email: "admin@example.com",
+  avatar: "/avatars/admin.jpg",
 }
 
 export function AdminSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  const { user } = useUserStore()
+  const [isMounted, setIsMounted] = React.useState(false)
+
+  React.useEffect(() => {
+    setIsMounted(true)
+  }, [])
+
+  // 使用useMemo来缓存计算结果，避免不必要的重新计算
+  const navData = React.useMemo(() => {
+    // 如果还没挂载，使用默认数据避免hydration错误
+    if (!isMounted) {
+      return {
+        navMainItems: [],
+        navSecondaryItems: []
+      }
+    }
+
+    // 获取用户角色，如果没有角色则使用空数组
+    const userRoles = user?.roles || []
+
+    // 获取过滤后的路由组
+    const filteredRouteGroups = getFilteredRouteGroups(userRoles)
+
+    // 分离主导航和次要导航
+    const mainNavGroups = filteredRouteGroups.filter(group =>
+      group.id !== 'quick-access' && group.isDisplayedOnPage
+    )
+    const quickAccessGroup = filteredRouteGroups.find(group => group.id === 'quick-access')
+
+    // 转换为NavMain组件需要的格式
+    const navMainItems = mainNavGroups.map(group => ({
+      title: group.title,
+      url: group.routes[0]?.href || '#',
+      icon: group.routes[0]?.icon,
+      items: group.routes.map(route => ({
+        title: route.title,
+        url: route.href,
+      })),
+    }))
+
+    // 转换为NavSecondary组件需要的格式
+    const navSecondaryItems = quickAccessGroup?.routes.map(route => ({
+      title: route.title,
+      url: route.href,
+      icon: route.icon,
+    })) || []
+
+    return { navMainItems, navSecondaryItems }
+  }, [user?.roles, isMounted])
+
   return (
     <Sidebar variant="inset" {...props}>
-      <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
-      </SidebarHeader>
       <SidebarContent>
-        <NavMain items={data.navMain} />
-        <NavProjects projects={data.projects} />
-        <NavSecondary items={data.navSecondary} className="mt-auto" />
+        <NavMain items={navData.navMainItems} />
+        <NavSecondary items={navData.navSecondaryItems} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={adminUser} />
       </SidebarFooter>
     </Sidebar>
   )

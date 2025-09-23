@@ -207,11 +207,11 @@ export default function HomeHeader() {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-48">
                     <DropdownMenuItem
-                      onClick={() => router.push("/dashboard/home")}
+                      onClick={() => router.push("/admin")}
                       className="cursor-pointer"
                     >
                       <Settings className="h-4 w-4 mr-2" />
-                      个人中心
+                      管理中心
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
@@ -312,11 +312,11 @@ export default function HomeHeader() {
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-48">
                   <DropdownMenuItem
-                    onClick={() => router.push("/dashboard/home")}
+                    onClick={() => router.push("/admin")}
                     className="cursor-pointer"
                   >
                     <Settings className="h-4 w-4 mr-2" />
-                    个人中心
+                    管理中心
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem

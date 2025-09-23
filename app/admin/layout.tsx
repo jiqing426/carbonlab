@@ -3,6 +3,7 @@ import {
   SidebarInset,
   SidebarProvider,
 } from "@/components/ui/sidebar"
+import { TaleProvider } from "@/lib/contexts/TaleContext"
 
 export default function AdminLayout({
   children,
@@ -10,11 +11,13 @@ export default function AdminLayout({
   children: React.ReactNode
 }) {
   return (
-    <SidebarProvider>
-      <AdminSidebar />
-      <SidebarInset>
-        {children}
-      </SidebarInset>
-    </SidebarProvider>
+    <TaleProvider>
+      <SidebarProvider>
+        <AdminSidebar />
+        <SidebarInset>
+          {children}
+        </SidebarInset>
+      </SidebarProvider>
+    </TaleProvider>
   )
 } 

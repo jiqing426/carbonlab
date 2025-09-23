@@ -26,10 +26,10 @@ export const API_CONFIG = {
 }
 
 // 环境变量覆盖（如果存在）
-if (process.env.NEXT_PUBLIC_API_BASE_URL) {
-  API_CONFIG.BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
+if (process.env.TALE_BASE_URL) {
+  API_CONFIG.BASE_URL = process.env.TALE_BASE_URL
 }
 
-if (process.env.NEXT_PUBLIC_TALE_APP_KEY) {
-  API_CONFIG.APP.APP_KEY = process.env.NEXT_PUBLIC_TALE_APP_KEY
+if (process.env.TALE_APP_KEY) {
+  API_CONFIG.APP.APP_KEY = process.env.TALE_APP_KEY
 }

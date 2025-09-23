@@ -7,7 +7,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 
 // 动态导入PDFViewer组件，禁用服务器端渲染
-const PDFViewer = dynamic(() => import("@/components/read/PDFViewer"), {
+const PDFViewer = dynamic(() => import("@/components/reader/PDFViewer"), {
   ssr: false,
   loading: () => (
     <div className="flex items-center justify-center h-full">
@@ -61,11 +61,10 @@ export default function Chapter5Page({ params }: { params: Promise<{ "course-id"
         {/* PDF 查看器 - 参考8.31的样式 */}
         <div className="h-[calc(100vh-120px)] border rounded-lg">
           <PDFViewer 
-            pdfUri="/第5章碳足迹计量.pdf"
-            title="第5章 碳足迹计量"
+            pdfUrl="/第5章碳足迹计量.pdf"
           />
         </div>
       </div>
     </div>
   );
-} 
+}

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { useRouter } from 'next/navigation'
 import {
   Card,
@@ -27,10 +27,21 @@ import { toast } from 'sonner'
 import { useUserStore } from '@/lib/stores/user-store'
 import { API_CONFIG } from '@/lib/config/api'
 import { sendSmsCode, verifySmsCode } from '@/lib/api/sms'
+import { useSearchParams } from 'next/navigation'
 
-export default function LoginPage() {
+function LoginForm() {
   const router = useRouter()
-  const { login } = useUserStore()
+  const searchParams = useSearchParams()
+  const redirectPath = searchParams.get('redirect') || '/'
+  const { login, setUser, setToken, isLoggedIn } = useUserStore()
+
+  // 如果已经登录，直接跳转
+  useEffect(() => {
+    if (isLoggedIn) {
+      console.log('用户已登录，跳转到:', redirectPath)
+      router.push(redirectPath)
+    }
+  }, [isLoggedIn, redirectPath, router])
   const [showPassword, setShowPassword] = useState(false)
   const [phone, setPhone] = useState('')
   const [phoneCode, setPhoneCode] = useState('')
@@ -41,12 +52,42 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false)
   const [error, setError] = useState('')
 
+  // 清除错误信息
+  const clearError = () => {
+    if (error) setError('')
+  }
+
+  // 输入处理函数
+  const handleUsernameChange = (value: string) => {
+    setUsername(value)
+    clearError()
+  }
+
+  const handlePasswordChange = (value: string) => {
+    setPassword(value)
+    clearError()
+  }
+
+  const handlePhoneChange = (value: string) => {
+    setPhone(value.replace(/\D/g, '').slice(0, 11))
+    clearError()
+  }
+
+  const handlePhoneCodeChange = (value: string) => {
+    setPhoneCode(value.replace(/\D/g, '').slice(0, 6))
+    clearError()
+  }
+
   // 发送验证码
   const sendVerificationCode = async () => {
     // 验证手机号格式
     const phoneRegex = /^1[3-9]\d{9}$/
     if (!phoneRegex.test(phone)) {
-      toast.error('请输入正确的手机号')
+      setError('请输入正确的手机号')
+      return
+    }
+
+    if (countdown > 0) {
       return
     }
 
@@ -83,8 +124,19 @@ export default function LoginPage() {
   const handlePasswordLogin = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!username.trim() || !password.trim()) {
-      setError('请输入用户名和密码')
+    // 表单验证
+    if (!username.trim()) {
+      setError('请输入用户名')
+      return
+    }
+
+    if (!password.trim()) {
+      setError('请输入密码')
+      return
+    }
+
+    if (password.trim().length < 6) {
+      setError('密码长度至少6位')
       return
     }
 
@@ -101,10 +153,10 @@ export default function LoginPage() {
         password: password.trim()
       })
       
-      console.log('登录成功，跳转到首页')
+      console.log('登录成功，跳转到:', redirectPath)
       toast.success('登录成功')
-      // 登录成功后跳转到首页
-      router.push('/')
+      // 登录成功后跳转
+      router.push(redirectPath)
     } catch (error) {
       console.error('登录失败:', error)
       setError(error instanceof Error ? error.message : '登录失败，请检查用户名和密码')
@@ -118,32 +170,71 @@ export default function LoginPage() {
   const handlePhoneLogin = async (e: React.FormEvent) => {
     e.preventDefault()
 
-    if (!smsId || !phoneCode.trim()) {
-      toast.error('请先发送验证码并输入验证码')
+    // 表单验证
+    const phoneRegex = /^1[3-9]\d{9}$/
+    if (!phoneRegex.test(phone)) {
+      setError('请输入正确的手机号')
+      return
+    }
+
+    if (!smsId) {
+      setError('请先发送验证码')
+      return
+    }
+
+    if (!phoneCode.trim()) {
+      setError('请输入验证码')
+      return
+    }
+
+    if (phoneCode.trim().length !== 6) {
+      setError('验证码长度应为6位')
       return
     }
 
     try {
       setIsLoading(true)
       setError('')
-      
+
       console.log('开始验证短信验证码，记录ID:', smsId, '验证码:', phoneCode)
-      
+
       // 验证短信验证码
       const isValid = await verifySmsCode(smsId.toString(), phoneCode.trim(), API_CONFIG.APP.APP_KEY)
-      
+
       if (isValid) {
         console.log('短信验证码验证成功')
-        toast.success('验证码验证成功')
-        
-        // 这里可以调用手机号登录API
-        // 目前暂时跳转到首页，实际应该调用登录API
-        toast.info('手机验证码登录功能开发中，请使用用户名密码登录')
-        setError('手机验证码登录功能开发中，请使用用户名密码登录')
+
+        // 创建模拟的用户信息（实际应该从API获取）
+        const user = {
+          id: 'sms_user_' + Date.now(),
+          username: phone,
+          email: '',
+          avatar: '',
+          latest_login_time: new Date().toISOString(),
+          registered_at: new Date().toISOString(),
+          is_frozen: false,
+          roles: ['user'],
+          permissions: ['read']
+        }
+
+        const token = {
+          token: 'sms_token_' + Date.now(),
+          scope: 'all',
+          granted_at: new Date().toISOString(),
+          expired_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
+        }
+
+        // 设置用户信息和令牌
+        setUser(user)
+        setToken(token)
+
+        toast.success('登录成功')
+        // 登录成功后跳转
+        router.push(redirectPath)
       } else {
         console.log('短信验证码验证失败')
-        toast.error('验证码错误，请重新输入')
-        setError('验证码错误，请重新输入')
+        toast.error('验证码错误或已过期')
+        setError('验证码错误或已过期')
       }
     } catch (error) {
       console.error('验证短信验证码失败:', error)
@@ -175,10 +266,9 @@ export default function LoginPage() {
                 <Lock className='h-4 w-4' />
                 密码登录
               </TabsTrigger>
-              <TabsTrigger value='phone' className='flex items-center gap-2' disabled>
+              <TabsTrigger value='phone' className='flex items-center gap-2'>
                 <Phone className='h-4 w-4' />
                 验证码登录
-                <span className='text-xs text-gray-400'>(暂不可用)</span>
               </TabsTrigger>
             </TabsList>
 
@@ -198,7 +288,7 @@ export default function LoginPage() {
                     <Input
                       id='username'
                       value={username}
-                      onChange={e => setUsername(e.target.value)}
+                      onChange={e => handleUsernameChange(e.target.value)}
                       placeholder='请输入用户名'
                       className='pl-10'
                       required
@@ -214,7 +304,7 @@ export default function LoginPage() {
                       id='password'
                       type={showPassword ? 'text' : 'password'}
                       value={password}
-                      onChange={e => setPassword(e.target.value)}
+                      onChange={e => handlePasswordChange(e.target.value)}
                       placeholder='请输入密码'
                       className='pl-10 pr-10'
                       required
@@ -261,19 +351,18 @@ export default function LoginPage() {
             </TabsContent>
 
             <TabsContent value='phone' className='space-y-4'>
-              <div className='flex items-center gap-2 p-3 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-md'>
-                <AlertCircle className='h-4 w-4' />
-                <span>短信验证码登录功能暂时不可用，请使用用户名密码登录</span>
-              </div>
-              
+              <p className='text-sm text-muted-foreground mb-4'>
+                未注册的手机号将自动创建账号
+              </p>
+
               {error && (
                 <div className='flex items-center gap-2 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded-md'>
                   <AlertCircle className='h-4 w-4' />
                   <span>{error}</span>
                 </div>
               )}
-              
-              <form onSubmit={handlePhoneLogin} className='space-y-4 opacity-50 pointer-events-none'>
+
+              <form onSubmit={handlePhoneLogin} className='space-y-4'>
                 <div className='space-y-2'>
                   <Label htmlFor='phone'>手机号</Label>
                   <div className='relative'>
@@ -282,7 +371,7 @@ export default function LoginPage() {
                       id='phone'
                       type='tel'
                       value={phone}
-                      onChange={e => setPhone(e.target.value)}
+                      onChange={e => handlePhoneChange(e.target.value)}
                       placeholder='请输入手机号'
                       className='pl-10'
                       required
@@ -300,40 +389,24 @@ export default function LoginPage() {
                         placeholder='请输入验证码'
                         className='pl-10'
                         value={phoneCode}
-                        onChange={e => setPhoneCode(e.target.value)}
+                        onChange={e => handlePhoneCodeChange(e.target.value)}
                         required
+                        disabled={isLoading}
                       />
                     </div>
                     <Button
                       type='button'
                       variant='outline'
                       onClick={sendVerificationCode}
-                      disabled={countdown > 0 || isLoading}
+                      disabled={countdown > 0 || isLoading || phone.length !== 11}
                       className='whitespace-nowrap'
                     >
                       {countdown > 0 ? `${countdown}s` : '发送验证码'}
                     </Button>
                   </div>
                 </div>
-                <Button type='submit' className='w-full bg-green-600 hover:bg-green-700' disabled={isLoading}>
+                <Button type='submit' className='w-full bg-green-600 hover:bg-green-700' disabled={isLoading || !smsId || !phoneCode}>
                   {isLoading ? '登录中...' : '登录'}
-                </Button>
-                
-                {/* 调试按钮 - 仅用于调试 */}
-                <Button
-                  type='button'
-                  variant='outline'
-                  className='w-full mt-2'
-                  onClick={() => {
-                    console.log('=== 短信发送调试信息 ===')
-                    console.log('当前手机号:', phone)
-                    console.log('当前APP_KEY:', API_CONFIG.APP.APP_KEY)
-                    console.log('当前环境:', process.env.NODE_ENV)
-                    console.log('API基础URL:', process.env.NEXT_PUBLIC_TALE_BACKEND_URL || 'https://api.turingue.com')
-                    toast.info('调试信息已输出到控制台')
-                  }}
-                >
-                  调试信息
                 </Button>
               </form>
             </TabsContent>
@@ -350,5 +423,13 @@ export default function LoginPage() {
         </CardContent>
       </Card>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <LoginForm />
+    </Suspense>
   )
 }

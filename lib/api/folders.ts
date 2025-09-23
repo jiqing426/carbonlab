@@ -5,16 +5,16 @@ const API_BASE_URL = process.env.NEXT_PUBLIC_TALE_BACKEND_URL || 'https://api.tu
 // 文件夹接口类型
 export interface Folder {
   id: string;
-  appId: string;
-  folderName: string;
-  folderType: string[];
-  folderAttr?: {
+  app_id: string;
+  folder_name: string;
+  folder_type: string[];
+  folder_attr?: {
     icon: string;
     color: string;
   };
   remark: string;
-  createdAt: string;
-  updatedAt: string;
+  created_at: string;
+  updated_at: string;
 }
 
 // API响应类型
@@ -49,18 +49,18 @@ export interface FoldersQueryParams {
 
 // 创建文件夹请求类型
 export interface CreateFolderRequest {
-  folderName: string;
-  folderType: string[];
+  folder_name: string;
+  folder_type: string[];
   remark?: string;
-  folderAttr?: object;
+  folder_attr?: object;
 }
 
 // 更新文件夹请求类型
 export interface UpdateFolderRequest {
-  folderName: string;
-  folderType: string[];
+  folder_name: string;
+  folder_type: string[];
   remark?: string;
-  folderAttr: object;
+  folder_attr: object;
 }
 
 // 获取文件夹列表
@@ -84,7 +84,7 @@ export async function getFolders(
   if (params?.keyword) queryParams.append('keyword', params.keyword);
 
   const response = await fetch(
-    `${API_BASE_URL}/cms/folder/page?${queryParams}`,
+    `${API_BASE_URL}/cms/v1/folders?${queryParams}`,
     {
       method: 'GET',
       headers: {
@@ -99,6 +99,9 @@ export async function getFolders(
   }
 
   const result = await response.json();
+  if (result.code !== 200) {
+    throw new Error(result.msg || '获取文件夹列表失败');
+  }
   return result;
 }
 
@@ -116,50 +119,23 @@ export async function createFolder(
     throw new Error('No valid app token');
   }
 
-  // 尝试多个可能的端点
-  const possibleEndpoints = [
-    '/cms/folder/create',
-    '/cms/folder',
-    '/api/cms/folder/create',
-    '/api/cms/folder',
-    '/folder/create',
-    '/folder'
-  ];
+  const response = await fetch(`${API_BASE_URL}/cms/v1/folders`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-t-token': appToken,
+    },
+    body: JSON.stringify(data),
+  });
 
-  let response: Response | null = null;
-  let lastError: Error | null = null;
-
-  for (const endpoint of possibleEndpoints) {
-    try {
-      console.log(`🔄 尝试端点: ${API_BASE_URL}${endpoint}`);
-      
-      response = await fetch(`${API_BASE_URL}${endpoint}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-t-token': appToken,
-        },
-        body: JSON.stringify(data),
-      });
-
-      if (response.ok) {
-        console.log(`✅ 成功使用端点: ${endpoint}`);
-        break;
-      } else {
-        console.log(`❌ 端点 ${endpoint} 失败: ${response.status}`);
-        lastError = new Error(`HTTP error! status: ${response.status}`);
-      }
-    } catch (error) {
-      console.log(`❌ 端点 ${endpoint} 异常:`, error);
-      lastError = error instanceof Error ? error : new Error('Unknown error');
-    }
-  }
-
-  if (!response || !response.ok) {
-    throw lastError || new Error('All endpoints failed');
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`);
   }
 
   const result = await response.json();
+  if (result.code !== 200) {
+    throw new Error(result.msg || '创建文件夹失败');
+  }
   return result.data;
 }
 
@@ -178,7 +154,7 @@ export async function updateFolder(
     throw new Error('No valid app token');
   }
 
-  const response = await fetch(`${API_BASE_URL}/cms/folder/update/${id}`, {
+  const response = await fetch(`${API_BASE_URL}/cms/v1/folders/${id}`, {
     method: 'PUT',
     headers: {
       'Content-Type': 'application/json',
@@ -192,6 +168,9 @@ export async function updateFolder(
   }
 
   const result = await response.json();
+  if (result.code !== 200) {
+    throw new Error(result.msg || '更新文件夹失败');
+  }
   return result.data;
 }
 
@@ -209,15 +188,21 @@ export async function deleteFolder(
     throw new Error('No valid app token');
   }
 
-  const response = await fetch(`${API_BASE_URL}/cms/folder/delete/${id}`, {
+  const response = await fetch(`${API_BASE_URL}/cms/v1/folders/${id}`, {
     method: 'DELETE',
     headers: {
+      'Content-Type': 'application/json',
       'x-t-token': appToken,
     },
   });
 
   if (!response.ok) {
     throw new Error(`HTTP error! status: ${response.status}`);
+  }
+
+  const result = await response.json();
+  if (result.code !== 200) {
+    throw new Error(result.msg || '删除文件夹失败');
   }
 }
 
@@ -235,10 +220,9 @@ export async function getFolderById(
     throw new Error('No valid app token');
   }
 
-  const response = await fetch(`${API_BASE_URL}/cms/folder/${id}`, {
+  const response = await fetch(`${API_BASE_URL}/cms/v1/folders/${id}`, {
     method: 'GET',
     headers: {
-      'Content-Type': 'application/json',
       'x-t-token': appToken,
     },
   });
@@ -248,5 +232,8 @@ export async function getFolderById(
   }
 
   const result = await response.json();
+  if (result.code !== 200) {
+    throw new Error(result.msg || '获取文件夹详情失败');
+  }
   return result.data;
 }

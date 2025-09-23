@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { useError } from "@/contexts/error-context";
 
 export default function GlobalError({
   error,
@@ -10,15 +9,10 @@ export default function GlobalError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
-  const { showError } = useError();
-
   useEffect(() => {
     // 记录错误
     console.error("Global error:", error);
-    
-    // 显示错误弹窗
-    showError("抱歉，应用遇到了一个错误。请刷新页面或返回首页。");
-  }, [error, showError]);
+  }, [error]);
 
   return (
     <html>
@@ -31,13 +25,21 @@ export default function GlobalError({
               </svg>
             </div>
             <h1 className="text-2xl font-bold text-gray-900 mb-2">应用错误</h1>
-            <p className="text-gray-600 mb-4">正在处理错误...</p>
-            <button
-              onClick={reset}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              重试
-            </button>
+            <p className="text-gray-600 mb-4">抱歉，应用遇到了一个错误。</p>
+            <div className="space-x-4">
+              <button
+                onClick={reset}
+                className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                重试
+              </button>
+              <button
+                onClick={() => window.location.href = '/'}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+              >
+                返回首页
+              </button>
+            </div>
           </div>
         </div>
       </body>

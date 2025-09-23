@@ -3,11 +3,13 @@ import "@/app/globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Toaster } from "@/components/ui/sonner"
 import { ErrorProvider } from "@/contexts/error-context"
+import { AuthProvider } from "@/components/auth/AuthProvider"
+import { AuthInitializer } from "@/components/auth/AuthInitializer"
 import Script from "next/script"
 
 export const metadata = {
-  title: "碳经济与管理AI实训平台",
-  description: "面向双碳战略的仿真模拟教学系统",
+  title: "AI实训平台",
+  description: "仿真模拟教学系统",
 }
 
 export default function RootLayout({
@@ -31,7 +33,11 @@ export default function RootLayout({
       <body className="font-sans">
         <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false} forcedTheme="light">
           <ErrorProvider>
-            {children}
+            <AuthProvider>
+              <AuthInitializer>
+                {children}
+              </AuthInitializer>
+            </AuthProvider>
           </ErrorProvider>
         </ThemeProvider>
         <Script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/11.12.0/math.min.js" />
