@@ -6,8 +6,8 @@ export async function GET(request: NextRequest) {
     
     // 检查环境变量
     const backendUrl = process.env.NEXT_PUBLIC_TALE_BACKEND_URL || 'https://api.turingue.com'
-    const appKey = process.env.NEXT_PUBLIC_APP_KEY || 'oa_HBamFxnA'
-    const appSecret = process.env.NEXT_PUBLIC_APP_SECRET || '7f785775-cfa9-44c1-bc84-80a9497a5bd5'
+    const appKey = process.env.NEXT_PUBLIC_TALE_APP_KEY || 'oa_HBamFxnA'
+    const appSecret = process.env.NEXT_PUBLIC_TALE_APP_SECRET || '7f785775-cfa9-44c1-bc84-80a9497a5bd5'
     
     console.log('使用的配置:', { backendUrl, appKey })
     

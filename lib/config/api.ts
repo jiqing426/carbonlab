@@ -30,6 +30,6 @@ if (process.env.NEXT_PUBLIC_API_BASE_URL) {
   API_CONFIG.BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 }
 
-if (process.env.NEXT_PUBLIC_APP_KEY) {
-  API_CONFIG.APP.APP_KEY = process.env.NEXT_PUBLIC_APP_KEY
+if (process.env.NEXT_PUBLIC_TALE_APP_KEY) {
+  API_CONFIG.APP.APP_KEY = process.env.NEXT_PUBLIC_TALE_APP_KEY
 }

@@ -11,6 +11,7 @@ import {
 
 // 本地资源库接口
 interface LocalRepository {
+  folderAttr: {};
   id: string;
   folderName: string;
   folderType: string[];
@@ -55,7 +56,7 @@ export class ResourceContentSyncService {
   private appKey: string;
 
   constructor() {
-    this.appKey = process.env.NEXT_PUBLIC_APP_KEY || 'oa_HBamFxnA';
+    this.appKey = process.env.NEXT_PUBLIC_TALE_APP_KEY || 'oa_HBamFxnA';
   }
 
   /**

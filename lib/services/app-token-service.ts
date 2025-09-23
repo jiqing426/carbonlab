@@ -230,7 +230,7 @@ class AppTokenService {
   public async directLogin(username: string, password: string): Promise<any> {
     try {
       const backendUrl = process.env.NEXT_PUBLIC_TALE_BACKEND_URL || 'https://api.turingue.com'
-      const appKey = process.env.NEXT_PUBLIC_APP_KEY || 'oa_HBamFxnA'
+      const appKey = process.env.NEXT_PUBLIC_TALE_APP_KEY || 'oa_HBamFxnA'
       
       console.log('=== 尝试直接登录 ===')
       console.log('登录URL:', `${backendUrl}/auth/v1/login/username-password`)
@@ -348,7 +348,7 @@ class AppTokenService {
       try {
         console.log('尝试使用app_key + app_secret获取App Token...')
         
-        const appSecret = process.env.NEXT_PUBLIC_APP_SECRET || '7f785775-cfa9-44c1-bc84-80a9497a5bd5'
+        const appSecret = process.env.NEXT_PUBLIC_TALE_APP_SECRET || '7f785775-cfa9-44c1-bc84-80a9497a5bd5'
         
         response = await fetch(apiUrl, {
           method: 'POST',
