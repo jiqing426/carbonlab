@@ -112,7 +112,7 @@ export default function AdminPage() {
   ]
 
   return (
-      <div className="space-y-8">
+      <div className="space-y-8 p-5">
         {/* 欢迎区域 */}
         <div className="space-y-2">
           <h1 className="text-4xl font-bold tracking-tight">

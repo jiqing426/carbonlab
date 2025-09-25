@@ -1,166 +1,236 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import Link from "next/link";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Circle, ChevronRight, Eye, BookOpen } from "lucide-react";
-import { getCourseUnitsAndLessons } from "@/lib/courses";
-import { FeatureLink } from "@/components/ui/feature-link";
+import React, { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { CourseContentSkeleton } from '@/components/course/CourseSkeleton';
+import { Progress } from '@/components/ui/progress';
+import {
+  Accordion,
+  AccordionContent,
+  AccordionItem,
+  AccordionTrigger,
+} from '@/components/ui/accordion';
+import { Circle, ChevronRight, Check } from 'lucide-react';
+import {
+  getCourseUnitsForComponent,
+  getCourseByIdForComponent,
+  CourseUnit,
+  getCourseProgressAPI,
+  getCourseProgressRecordsAPI,
+  ProgressRecord,
+} from '@/lib/api/courses';
+import { getAvatarPresignedUrl } from '@/lib/api/users';
+import { getProcessedFileUri } from '@/lib/utils';
+import { useUserStore } from '@/lib/stores/user-store';
 
 interface CourseContentProps {
   courseId: string;
 }
 
+interface CourseData {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  enrollment_count: number;
+  average_rating: number;
+  cover_url: string;
+  coverImageKey?: string;
+  isEnabled: boolean;
+}
+
 export function CourseContent({ courseId }: CourseContentProps) {
-  const [units, setUnits] = useState<any[]>([]);
+  const { user } = useUserStore();
+  const [course, setCourse] = useState<CourseData | null>(null);
+  const [units, setUnits] = useState<CourseUnit[]>([]);
+  const [progressPercentage, setProgressPercentage] = useState<number>(0);
+  const [progressRecords, setProgressRecords] = useState<ProgressRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [imageLoading, setImageLoading] = useState(true);
+
+  // 生成课程封面图片预览URL
+  useEffect(() => {
+    const generateImageUrl = async () => {
+      if (course?.coverImageKey) {
+        try {
+          setImageLoading(true);
+          // 处理coverImageKey，确保它是有效的对象键
+          let objectKey = course.coverImageKey;
+
+          // 如果coverImageKey以'/'开头，移除开头的'/'
+          if (objectKey.startsWith('/')) {
+            objectKey = objectKey.substring(1);
+          }
+
+          const presignedResponse = await getAvatarPresignedUrl(objectKey, process.env.NEXT_PUBLIC_DEFAULT_APP_KEY);
+          const url = getProcessedFileUri(presignedResponse.presignedUrl);
+          setImageUrl(url);
+        } catch (error) {
+          console.error('生成课程封面预览URL失败:', error);
+          // 使用备用的cover_url
+          setImageUrl(course.cover_url || '');
+        } finally {
+          setImageLoading(false);
+        }
+      } else if (course?.cover_url) {
+        // 如果没有coverImageKey，使用cover_url
+        setImageUrl(course.cover_url);
+        setImageLoading(false);
+      } else {
+        setImageLoading(false);
+      }
+    };
+
+    if (course) {
+      generateImageUrl();
+    }
+  }, [course]);
 
   useEffect(() => {
     async function fetchCourseDetails() {
       setLoading(true);
-      const { units } = await getCourseUnitsAndLessons(courseId);
-      setUnits(units);
-      setLoading(false);
+      setError(null);
+      try {
+        if (!user?.id) {
+          console.error('用户信息不完整，请重新登录');
+          setError('用户信息不完整，请重新登录');
+          return;
+        }
+
+        // 同时获取课程基本信息、课程单元数据、课程进度和详细进度记录
+        const [courseData, unitsData, progressData, progressRecordsData] =
+          await Promise.all([
+            getCourseByIdForComponent(courseId),
+            getCourseUnitsForComponent(courseId),
+            getCourseProgressAPI(courseId, user.id),
+            getCourseProgressRecordsAPI(courseId, user.id),
+          ]);
+
+        setCourse(courseData);
+        setUnits(unitsData.units);
+        setProgressPercentage(progressData);
+        setProgressRecords(progressRecordsData);
+      } catch (err) {
+        console.error('获取课程详情失败:', err);
+        setError('获取课程详情失败，请稍后重试');
+      } finally {
+        setLoading(false);
+      }
     }
-    fetchCourseDetails();
-  }, [courseId]);
+
+    if (user?.id) {
+      fetchCourseDetails();
+    }
+  }, [courseId, user?.id]);
 
   if (loading) {
+    return <CourseContentSkeleton />;
+  }
+
+  if (error) {
     return (
-      <div className="bg-background p-4 rounded-lg">
-        <div className="flex justify-center py-12">
-          <div className="text-center">
-            <div className="inline-block w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-spin"></div>
-            <p className="mt-4 text-muted-foreground">加载课程内容中...</p>
-          </div>
-        </div>
+      <div className='bg-background p-4 rounded-lg'>
+        <div className='text-center text-red-500'>{error}</div>
       </div>
     );
   }
 
+  const totalLessons = units.reduce(
+    (acc, unit) => acc + (unit.lessons?.length || 0),
+    0
+  );
+
+  // 根据实际进度记录计算已完成课时数
+  const completedLessons = progressRecords.filter(
+    record => record.status?.toLowerCase() === 'completed'
+  ).length;
+
+  // 检查特定课时是否已完成的函数
+  const isLessonCompleted = (lessonId: string): boolean => {
+    return progressRecords.some(
+      record =>
+        record.lessonId === lessonId &&
+        record.status?.toLowerCase() === 'completed'
+    );
+  };
+
   return (
-    <div className="bg-background p-4 rounded-lg">
-      {/* 课程大纲标题 */}
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-800 mb-2">课程大纲</h2>
-        <p className="text-gray-600">系统学习碳核算与碳管理的核心知识体系</p>
+    <div className='bg-background p-4 rounded-lg'>
+      {/* 课程进度 */}
+      <div className='mb-4'>
+        <h3 className='text-lg font-semibold mb-2'>课程进度</h3>
+        <Progress value={progressPercentage} className='mb-2' />
+        <p className='text-sm text-gray-600'>
+          已完成 {completedLessons} / {totalLessons} 课时 ({progressPercentage}
+          %)
+        </p>
       </div>
 
-      <Accordion type="single" collapsible className="w-full" defaultValue="item-4">
+      <Accordion
+        type='single'
+        collapsible
+        className='w-full'
+        defaultValue='item-0'
+      >
         {units.map((unit, unitIndex) => {
-          const isChapter5 = unit.title === "碳足迹计量";
-          const isSampleChapter = isChapter5;
-          
+          const unitLessons = unit.lessons || [];
+          // 根据实际进度记录计算单元完成情况
+          const completedInUnit = unitLessons.filter((lesson: any) =>
+            isLessonCompleted(lesson.id)
+          ).length;
+          const isUnitCompleted =
+            completedInUnit === unitLessons.length && unitLessons.length > 0;
+
           return (
-            <AccordionItem 
-              value={`item-${unitIndex}`} 
-              key={unitIndex}
-              className={isSampleChapter ? "border-2 border-green-200 rounded-lg mb-4" : ""}
-            >
-              <AccordionTrigger className={isSampleChapter ? "hover:bg-green-50 px-4" : ""}>
-                <div className="flex justify-between w-full items-center">
-                  <div className="flex items-center">
-                    {isSampleChapter && (
-                      <div className="mr-3 flex items-center">
-                        <Eye className="h-5 w-5 text-green-600 mr-1" />
-                        <span className="text-green-600 font-semibold text-sm">样章预览</span>
-                      </div>
-                    )}
-                    <span className={`${isSampleChapter ? 'text-green-800 font-bold' : 'text-gray-800'} text-lg`}>
-                      {unit.title}
+            <AccordionItem value={`item-${unitIndex}`} key={unit.id}>
+              <AccordionTrigger>
+                <div className='flex justify-between w-full items-center'>
+                  <span>
+                    第 {unitIndex + 1} 单元：{unit.title}
+                  </span>
+                  <div className='flex items-center'>
+                    <span className='mr-2'>
+                      {isUnitCompleted && (
+                        <Check className='text-green-500 h-4 w-4' />
+                      )}
                     </span>
-                  </div>
-                  <div className="flex items-center">
-                    <span className={`text-sm mr-2 ${isSampleChapter ? 'text-green-600' : 'text-gray-500'}`}>
-                      {unit.lessons.length} 节
+                    <span className='text-gray-500 text-sm mr-2'>
+                      {completedInUnit}/{unitLessons.length} 完成
                     </span>
-                    {isSampleChapter && (
-                      <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium">
-                        样章内容
-                      </span>
-                    )}
                   </div>
                 </div>
               </AccordionTrigger>
-              <AccordionContent className={isSampleChapter ? "bg-green-50" : ""}>
-                <ul className="space-y-2">
-                  {unit.lessons.map((lesson: any, lessonIndex: number) => {
-                    const isSubSection = lesson.title.includes('.');
-                    const isMainSection = lesson.title.match(/^\d+\.\d+ /);
-                    
-                    // 为第5章创建特殊的链接
-                    const lessonHref = isChapter5 
-                      ? `/courses/${courseId}/chapter-5`
-                      : `/courses/${courseId}/lessons/${lesson.id}`;
-                    
-                    // 判断课时是否可用（只有第5章可用）
-                    const isLessonAvailable = isChapter5;
-                    
+              <AccordionContent>
+                <ul className='space-y-2'>
+                  {unitLessons.map((lesson: any, lessonIndex: number) => {
+                    // 根据实际进度记录判断课时完成状态
+                    const isCompleted = isLessonCompleted(lesson.id);
+
                     return (
-                      <li key={lessonIndex}>
-                        {isLessonAvailable ? (
-                          // 已开放的课时使用普通Link
-                          <Link
-                            href={lessonHref}
-                            className={`flex items-center justify-between p-3 rounded transition-colors ${
-                              isSampleChapter 
-                                ? 'hover:bg-green-100 border-l-4 border-green-300' 
-                                : 'hover:bg-gray-100'
-                            }`}
-                          >
-                            <div className="flex items-center flex-grow">
-                              <Circle className={`mr-3 flex-shrink-0 ${
-                                isSampleChapter ? 'text-green-500' : 'text-gray-300'
-                              }`} />
-                              <div className="flex-grow">
-                                <span className={`block text-left ${
-                                  isMainSection 
-                                    ? 'font-semibold text-green-800' 
-                                    : isSubSection 
-                                      ? 'font-medium text-green-600 ml-4' 
-                                      : 'text-gray-800'
-                                }`}>
-                                  {lesson.title}
-                                </span>
-                                <span className={`text-xs mt-1 block text-left ${
-                                  isSampleChapter ? 'text-green-600' : 'text-gray-500'
-                                }`}>
-                                  {lesson.description}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-center ml-4">
-                              <ChevronRight className={`h-4 w-4 ${
-                                isSampleChapter ? 'text-green-500' : 'text-gray-400'
-                              }`} />
-                            </div>
-                          </Link>
-                        ) : (
-                          // 未开放的课时使用FeatureLink显示弹框
-                          <FeatureLink
-                            href={lessonHref}
-                            isAvailable={false}
-                            featureName={lesson.title}
-                            className={`flex items-center justify-between p-3 rounded transition-colors cursor-pointer ${
-                              'hover:bg-gray-100'
-                            }`}
-                          >
-                            <div className="flex items-center flex-grow">
-                              <Circle className="mr-3 flex-shrink-0 text-gray-300" />
-                              <div className="flex-grow">
-                                <span className="block text-gray-800 text-left">
-                                  {lesson.title}
-                                </span>
-                                <span className="text-xs mt-1 block text-gray-500 text-left">
-                                  {lesson.description}
-                                </span>
-                              </div>
-                            </div>
-                            <div className="flex items-center ml-4">
-                              <ChevronRight className="h-4 w-4 text-gray-400" />
-                            </div>
-                          </FeatureLink>
-                        )}
+                      <li key={lesson.id}>
+                        <Link
+                          href={`/units/${unit.id}?lesson_id=${lesson.id}`}
+                          target='_blank'
+                          rel='noopener noreferrer'
+                        >
+                          <div className='flex items-center p-2 rounded hover:bg-gray-100 transition-colors'>
+                            {isCompleted ? (
+                              <Check className='text-green-500 mr-2 flex-shrink-0' />
+                            ) : (
+                              <Circle className='text-gray-300 mr-2 flex-shrink-0' />
+                            )}
+                            <span
+                              className={`flex-grow ${
+                                isCompleted ? 'text-gray-600' : 'text-gray-800'
+                              }`}
+                            >
+                              {unitIndex + 1}.{lessonIndex + 1} {lesson.title}
+                            </span>
+                            <ChevronRight className='text-gray-400 ml-2 flex-shrink-0' />
+                          </div>
+                        </Link>
                       </li>
                     );
                   })}

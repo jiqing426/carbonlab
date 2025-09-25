@@ -29,6 +29,8 @@ import {
   SidebarMenuItem,
   useSidebar,
 } from "@/components/ui/sidebar"
+import { useRouter } from "next/navigation"
+import { useUserStore } from "@/lib/stores/user-store"
 
 export function NavUser({
   user,
@@ -36,10 +38,18 @@ export function NavUser({
   user: {
     name: string
     email: string
-    avatar: string
+    avatar?: string | null
+    role?: string
   }
 }) {
   const { isMobile } = useSidebar()
+  const router = useRouter()
+  const { logout } = useUserStore()
+
+  const handleLogout = () => {
+    logout()
+    router.push('/login')
+  }
 
   return (
     <SidebarMenu>
@@ -51,12 +61,14 @@ export function NavUser({
               className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
             >
               <Avatar className="h-8 w-8 rounded-lg">
-                <AvatarImage src={user.avatar} alt={user.name} />
-                <AvatarFallback className="rounded-lg">管理</AvatarFallback>
+                <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
+                <AvatarFallback className="rounded-lg">
+                  {user.name.charAt(0).toUpperCase()}
+                </AvatarFallback>
               </Avatar>
               <div className="grid flex-1 text-left text-sm leading-tight">
                 <span className="truncate font-semibold">{user.name}</span>
-                <span className="truncate text-xs">{user.email}</span>
+                <span className="truncate text-xs">{user.role || user.email}</span>
               </div>
               <ChevronsUpDown className="ml-auto size-4" />
             </SidebarMenuButton>
@@ -70,32 +82,26 @@ export function NavUser({
             <DropdownMenuLabel className="p-0 font-normal">
               <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
                 <Avatar className="h-8 w-8 rounded-lg">
-                  <AvatarImage src={user.avatar} alt={user.name} />
-                  <AvatarFallback className="rounded-lg">管理</AvatarFallback>
+                  <AvatarImage src={user.avatar ?? undefined} alt={user.name} />
+                  <AvatarFallback className="rounded-lg">
+                    {user.name.charAt(0).toUpperCase()}
+                  </AvatarFallback>
                 </Avatar>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">{user.name}</span>
-                  <span className="truncate text-xs">{user.email}</span>
+                  <span className="truncate text-xs">{user.role || user.email}</span>
                 </div>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuGroup>
-              <DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push('/admin/settings/account')}>
                 <BadgeCheck />
                 个人资料
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings />
-                系统设置
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Bell />
-                通知设置
-              </DropdownMenuItem>
             </DropdownMenuGroup>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>
+            <DropdownMenuItem onClick={handleLogout}>
               <LogOut />
               退出登录
             </DropdownMenuItem>
@@ -104,4 +110,4 @@ export function NavUser({
       </SidebarMenuItem>
     </SidebarMenu>
   )
-} 
+}

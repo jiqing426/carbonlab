@@ -52,6 +52,9 @@ interface UserStore {
   // 更新头像
   updateAvatar: (avatarUrl: string) => void
 
+  // 更新用户信息
+  updateUser: (userData: Partial<User>) => void
+
   // 强制同步方法
   syncFromStorage: () => void
 
@@ -248,6 +251,16 @@ export const useUserStore = create<UserStore>((set, get) => {
       const newState = {
         ...state,
         user: state.user ? { ...state.user, avatar: avatarUrl } : null,
+      }
+      set(newState)
+      saveToStorage(newState)
+    },
+
+    updateUser: (userData: Partial<User>) => {
+      const state = get()
+      const newState = {
+        ...state,
+        user: state.user ? { ...state.user, ...userData } : null,
       }
       set(newState)
       saveToStorage(newState)

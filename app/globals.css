@@ -125,7 +125,17 @@
 input:focus,
 select:focus,
 textarea:focus {
-  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.3);
+  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.15);
+  border-color: var(--primary-custom);
+  outline: none !important;
+}
+
+/* 确保输入框没有默认的黑色边框 */
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: none !important;
+  box-shadow: 0 0 0 3px rgba(94, 106, 210, 0.15);
   border-color: var(--primary-custom);
 }
 

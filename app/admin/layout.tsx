@@ -1,4 +1,5 @@
 import { AdminSidebar } from "@/components/admin/admin-sidebar"
+import { AdminRouteGuard } from "@/components/admin/admin-route-guard"
 import {
   SidebarInset,
   SidebarProvider,
@@ -12,12 +13,14 @@ export default function AdminLayout({
 }) {
   return (
     <TaleProvider>
-      <SidebarProvider>
-        <AdminSidebar />
-        <SidebarInset>
-          {children}
-        </SidebarInset>
-      </SidebarProvider>
+      <AdminRouteGuard>
+        <SidebarProvider>
+          <AdminSidebar />
+          <SidebarInset>
+            {children}
+          </SidebarInset>
+        </SidebarProvider>
+      </AdminRouteGuard>
     </TaleProvider>
   )
 } 
