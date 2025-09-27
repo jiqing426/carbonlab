@@ -140,9 +140,133 @@ export interface SimulationData {
   currentPlan?: AnnualPlan
 }
 
+// ESG报告数据接口
+export interface ESGScores {
+  environment: number // 环境评分 (0-100)
+  social: number // 社会评分 (0-100)
+  governance: number // 治理评分 (0-100)
+  overall: number // 综合评分 (0-100)
+}
+
+export interface ESGRating {
+  rating: "AAA" | "AA" | "A" | "BBB" | "BB" | "B" // ESG等级
+  color: string // 颜色样式
+  bg: string // 背景样式
+}
+
+export interface CarbonFootprintData {
+  totalEmissions: number // 总碳排放 (kg)
+  totalProduction: number // 总生产量 (个)
+  carbonIntensity: number // 碳强度 (kg/产品)
+  reductionRate: number // 减排率 (%)
+}
+
+export interface ESGRecommendation {
+  category: "环境" | "社会" | "治理" | "综合" // 建议类别
+  priority: "高" | "中" | "低" // 优先级
+  suggestion: string // 具体建议
+}
+
+export interface ESGReportData {
+  // 基本信息
+  reportDate: string // 报告生成日期
+  simulationPeriod: {
+    startYear: number
+    endYear: number
+    totalYears: number
+  }
+  
+  // ESG评分
+  esgScores: ESGScores
+  overallRating: ESGRating
+  
+  // 环境绩效指标
+  environmentalMetrics: {
+    carbonFootprint: CarbonFootprintData
+    carbonAllowanceUsageRate: number // 碳配额使用率 (%)
+    totalUpgradeInvestment: number // 技改投资总额 (元)
+    energyUpgradeCount: number // 节能技改次数
+    emissionUpgradeCount: number // 减排技改次数
+    avgProductCarbonLabel: number // 平均产品碳标签 (kg/个)
+    allowanceTradingIncome: number // 配额交易收入 (元)
+    carbonCompliance: boolean // 碳合规性
+  }
+  
+  // 社会与治理绩效
+  socialGovernanceMetrics: {
+    operationalYears: number // 经营年限
+    finalCash: number // 最终现金 (元)
+    totalProfit: number // 累计利润 (元)
+    financialHealth: "健康" | "困难" // 财务状况
+    sustainabilityInvestment: boolean // 可持续发展投资
+    allowanceTrading: boolean // 配额交易开展情况
+    longTermPlanning: boolean // 长期规划完成情况
+  }
+  
+  // 年度经营记录
+  yearlyRecords: Array<{
+    year: number
+    productionQuantity: number // 生产数量 (个)
+    yearlyProfit: number // 年度利润 (元)
+    cashAsset: number // 现金资产 (元)
+    carbonEmission: number // 碳排放 (kg)
+    carbonAllowance: number // 碳配额 (kg)
+    quotaBalance: number // 配额结余 (kg)
+    quotaIncome: number // 配额收入 (元)
+    energyUpgradeCount: number // 节能技改次数
+    emissionUpgradeCount: number // 减排技改次数
+    productCarbonLabel: number // 产品碳标签 (kg/个)
+  }>
+  
+  // 技术升级历史
+  upgradeHistory: Array<{
+    year: number
+    quarter: number
+    type: "energy" | "emission" // 升级类型
+    fromLevel: number // 升级前等级
+    toLevel: number // 升级后等级
+    cost: number // 投资金额 (元)
+  }>
+  
+  // 碳配额管理记录
+  carbonAllowanceRecords: Array<{
+    year: number
+    allowance: number // 配额 (kg)
+    used: number // 使用量 (kg)
+    traded: number // 交易量 (kg，正数为购买，负数为销售)
+    tradingCost: number // 交易成本 (元)
+    compliance: boolean // 是否合规
+  }>
+  
+  // ESG改进建议
+  recommendations: ESGRecommendation[]
+  
+  // 报告总结
+  summary: {
+    mainAchievements: string[] // 主要成就
+    developmentProspects: string // 发展前景
+    esgValueReflection: {
+      environmentalValue: string // 环境价值
+      socialValue: string // 社会价值
+      governanceValue: string // 治理价值
+    }
+  }
+  
+  // 关键统计数据
+  keyStatistics: {
+    totalCarbonEmission: number // 总碳排放 (kg)
+    totalAllowance: number // 总配额 (kg)
+    totalUpgradeInvestment: number // 总技改投资 (元)
+    totalEnergyUpgradeCount: number // 总节能技改次数
+    totalEmissionUpgradeCount: number // 总减排技改次数
+    totalAllowanceTraded: number // 总配额交易收入 (元)
+    avgCarbonLabel: number // 平均产品碳标签 (kg/个)
+  }
+}
+
 // 组件导出
 export { IntroductionStep } from "./IntroductionStep"
 export { SimulationSetupStep } from "./SimulationSetupStep"
 export { SimulationRunStep } from "./SimulationRunStep"
 export { ResultAnalysisStep } from "./ResultAnalysisStep"
-export { ESGReportStep } from "./ESGReportStep" 
+export { ESGReportStep } from "./ESGReportStep"

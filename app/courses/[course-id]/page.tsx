@@ -40,14 +40,15 @@ const subscriptionFetcher = async ([_, courseId, userId]: [
 export default function LearningUnit({
   params,
 }: {
-  params: { 'course-id': string };
+  params: Promise<{ 'course-id': string }>;
 }) {
   const { user } = useUserStore();
   const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
   const [subscribing, setSubscribing] = useState(false);
   const [imageUrl, setImageUrl] = useState<string>('');
   const [imageLoading, setImageLoading] = useState(true);
-  const courseId = params['course-id'];
+  const resolvedParams = React.use(params);
+  const courseId = resolvedParams['course-id'];
 
   // 使用 SWR 获取课程数据
   const {
@@ -57,7 +58,7 @@ export default function LearningUnit({
   } = useSWR(['course', courseId], courseFetcher, {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
-    dedupingInterval: 300000, // 5分钟内不重复请求
+    dedupingInterval: 1000, 
   });
 
   // 使用 SWR 获取订阅状态
@@ -93,7 +94,7 @@ export default function LearningUnit({
             objectKey = objectKey.substring(1);
           }
 
-          const presignedResponse = await getAvatarPresignedUrl(objectKey, process.env.NEXT_PUBLIC_DEFAULT_APP_KEY);
+          const presignedResponse = await getAvatarPresignedUrl(objectKey, process.env.NEXT_PUBLIC_TALE_APP_KEY);
           const url = getProcessedFileUri(presignedResponse.presignedUrl);
           setImageUrl(url);
         } catch (error) {

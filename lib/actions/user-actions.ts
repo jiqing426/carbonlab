@@ -413,7 +413,7 @@ export async function getAvatarPresignedUrlAction(ossKey: string): Promise<
   }>
 > {
   try {
-    const appKey = process.env.NEXT_PUBLIC_DEFAULT_APP_KEY || 'oa_ab9afb9d';
+    const appKey = process.env.NEXT_PUBLIC_TALE_APP_KEY;
     if (!appKey) {
       throw new Error('No app key configured');
     }
@@ -443,7 +443,7 @@ export async function uploadAvatarAction(
   userId: string
 ): Promise<ServerActionResult<{ avatar_oss_key: string }>> {
   try {
-    const appKey = process.env.NEXT_PUBLIC_DEFAULT_APP_KEY || 'oa_ab9afb9d';
+    const appKey = process.env.NEXT_PUBLIC_TALE_APP_KEY;
     if (!appKey) {
       throw new Error('No app key configured');
     }

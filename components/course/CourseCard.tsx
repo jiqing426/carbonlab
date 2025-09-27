@@ -1,9 +1,12 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { cn } from "@/lib/utils";
+import { cn, getProcessedFileUri } from "@/lib/utils";
 import { Play } from 'lucide-react';
+import { getAvatarPresignedUrl } from '@/lib/api/users';
+import { useUserStore } from '@/lib/stores/user-store';
 
 // 定义课程图标映射
 const courseIcons = {
@@ -27,24 +30,67 @@ type CourseCardProps = {
     icon?: string;
     module: string;
     image?: string;
+    coverImageKey?: string;
   };
   className?: string;
 };
 
 export function CourseCard({ course, className }: CourseCardProps) {
-  // 将英文难度转换为中文难度
-  const difficultyInChinese = {
-    "beginner": "基础",
-    "intermediate": "中级",
-    "advanced": "高级"
-  }[course.difficulty] || course.difficulty;
-  
-  // 根据难度设置徽章颜色
-  const difficultyColor = {
-    "基础": "bg-green-100 text-green-800",
-    "中级": "bg-indigo-100 text-indigo-800",
-    "高级": "bg-red-100 text-red-800",
-  }[difficultyInChinese] || "bg-gray-100 text-gray-800";
+  const [imageUrl, setImageUrl] = useState<string>('');
+  const [imageLoading, setImageLoading] = useState(true);
+  const router = useRouter();
+  const { isLoggedIn } = useUserStore();
+
+  // 生成课程封面图片预览URL
+  useEffect(() => {
+    const generateImageUrl = async () => {
+      console.log('CourseCard - 开始生成图片URL，课程数据:', {
+        id: course.id,
+        title: course.title,
+        coverImageKey: course.coverImageKey,
+        image: course.image
+      });
+
+      if (course.coverImageKey) {
+        try {
+          setImageLoading(true);
+          // 处理coverImageKey，确保它是有效的对象键
+          let objectKey = course.coverImageKey;
+
+          // 如果coverImageKey以'/'开头，移除开头的'/'
+          if (objectKey.startsWith('/')) {
+            objectKey = objectKey.substring(1);
+          }
+
+          const appKey = process.env.NEXT_PUBLIC_TALE_APP_KEY;
+
+          const presignedResponse = await getAvatarPresignedUrl(objectKey, appKey);
+          const url = getProcessedFileUri(presignedResponse.presignedUrl);
+          
+          setImageUrl(url);
+        } catch (error) {
+          console.error('CourseCard - 生成课程封面预览URL失败:', error);
+          // 使用备用的image字段
+          console.log('CourseCard - 使用备用image字段:', course.image);
+          setImageUrl(course.image || '');
+        } finally {
+          setImageLoading(false);
+        }
+      } else if (course.image) {
+        // 如果没有coverImageKey，使用image字段
+        console.log('CourseCard - 没有coverImageKey，使用image字段:', course.image);
+        setImageUrl(course.image);
+        setImageLoading(false);
+      } else {
+        console.log('CourseCard - 没有任何图片数据，显示默认图标');
+        setImageLoading(false);
+      }
+    };
+
+    generateImageUrl();
+  }, [course.coverImageKey, course.image]);
+
+
   
   // 根据状态设置徽章颜色
   const statusColor = {
@@ -108,12 +154,32 @@ export function CourseCard({ course, className }: CourseCardProps) {
 
   const isAvailable = course.status !== "开发中" && course.status !== "维护中";
 
+  // 处理开始学习按钮点击
+  const handleStartLearning = (e: React.MouseEvent) => {
+    e.preventDefault();
+    
+    if (!isLoggedIn) {
+      // 未登录时跳转到登录页面，并设置回调URL
+      const currentUrl = `/courses/${course.id}`;
+      router.push(`/login?redirect=${encodeURIComponent(currentUrl)}`);
+      return;
+    }
+    
+    // 已登录时直接跳转到课程页面
+    router.push(`/courses/${course.id}`);
+  };
+
   return (
     <Card className={cn("h-full overflow-hidden transition-all hover:shadow-lg hover:translate-y-[-5px]", className)}>
       <div className={`aspect-video relative overflow-hidden ${moduleStyles.bg} flex items-center justify-center`}>
-        {course.image ? (
+        {imageLoading ? (
+          <div className="flex flex-col items-center justify-center h-full w-full">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+            <p className="mt-2 text-sm text-gray-600">加载中...</p>
+          </div>
+        ) : imageUrl ? (
           <img 
-            src={course.image.startsWith('/') ? course.image : `/${course.image}`} 
+            src={imageUrl} 
             alt={course.title}
             className="w-full h-full object-cover"
           />
@@ -132,20 +198,17 @@ export function CourseCard({ course, className }: CourseCardProps) {
                 {course.status}
               </span>
             )}
-            <span className={`text-xs font-medium ${difficultyColor} px-2 py-1 rounded`}>
-              {difficultyInChinese}
-            </span>
           </div>
         </div>
-        <p className="text-gray-600 mb-4">{course.description}</p>
-        <Link
-          href={`/courses/${course.id}`}
+        <p className="text-gray-600 text-sm mb-4 line-clamp-5">{course.description}</p>
+        <button
+          onClick={handleStartLearning}
           className={`inline-block ${moduleStyles.button} text-white font-medium px-4 py-2 rounded-lg transition duration-300 transform hover:scale-105`}
         >
           <Play className="h-4 w-4 inline-block mr-2" />
           开始学习
-        </Link>
+        </button>
       </CardContent>
     </Card>
   );
-} 
+}

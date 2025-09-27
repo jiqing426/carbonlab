@@ -11,7 +11,8 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import { getCourse, modules } from "@/lib/database"
+import { modules } from "@/lib/database"
+import { getCourseByIdForComponent } from "@/lib/api/courses"
 
 interface CourseLayoutProps {
   children: ReactNode
@@ -44,20 +45,26 @@ export default function CourseLayout({ children }: CourseLayoutProps) {
   
   // 获取课程的所属模块
   useEffect(() => {
-    if (courseId) {
-      const course = getCourse(courseId)
-      if (course) {
-        // 查找课程所属的模块
-        const module = modules.find(m => m.id === course.module)
-        if (module) {
-          setCourseModule({
-            id: module.id,
-            title: module.title
-          })
+    const fetchCourseModule = async () => {
+      if (courseId) {
+        try {
+          const course = await getCourseByIdForComponent(courseId)
+          if (course) {
+            // 由于API返回的课程数据没有module字段，暂时设置默认模块
+            // 如果需要模块信息，需要在API中添加相应字段
+            setCourseModule({
+              id: "carbon-monitor", // 默认模块
+              title: "碳监测"
+            })
+          }
+        } catch (error) {
+          console.error("Failed to fetch course:", error)
         }
       }
+      setLoading(false)
     }
-    setLoading(false)
+    
+    fetchCourseModule()
   }, [courseId])
   
   return (

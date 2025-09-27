@@ -49,32 +49,24 @@ interface StepperProps {
 export function Stepper({ steps, currentStep, onStepChange }: StepperProps) {
   return (
     <div className="w-full max-w-6xl mx-auto">
-      {/* 横线形式的步骤导航 - 优化后的样式 */}
-      <div className="bg-white/80 backdrop-blur-sm rounded-2xl border-0 shadow-xl p-8 mb-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+      {/* 横线形式的步骤导航 - 紧凑样式，禁用点击 */}
+      <div className="bg-white/80 backdrop-blur-sm rounded-lg border-0 shadow-md p-4 mb-6">
+        <div className="flex justify-center items-center gap-3 mb-4">
           {steps.map((step, index) => (
-            <Button
+            <div
               key={step.title}
-              variant={currentStep === index ? "default" : "outline"}
-              size="lg"
-              onClick={() => onStepChange(index)}
               className={cn(
-                "flex flex-col items-center justify-center gap-3 h-24 text-base font-medium transition-all duration-300 relative overflow-hidden",
+                "flex flex-col items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all duration-300 relative overflow-hidden rounded-lg min-w-0 flex-1 max-w-[140px]",
                 currentStep === index 
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg scale-105" 
-                  : "hover:scale-102 hover:shadow-md"
+                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md" 
+                  : "bg-gray-50 text-gray-600"
               )}
             >
-              {/* 背景装饰 */}
-              {currentStep === index && (
-                <div className="absolute inset-0 bg-gradient-to-r from-blue-400 to-indigo-400 opacity-20 animate-pulse"></div>
-              )}
-              
               <div className={cn(
-                "w-8 h-8 rounded-full border-2 flex items-center justify-center relative z-10",
+                "w-7 h-7 rounded-full border flex items-center justify-center relative z-10 flex-shrink-0",
                 currentStep === index 
                   ? "border-white bg-white/20" 
-                  : "border-gray-300 bg-gray-50"
+                  : "border-gray-300 bg-white"
               )}>
                 {index < currentStep ? (
                   <Check className="w-4 h-4 text-green-600" />
@@ -88,22 +80,17 @@ export function Stepper({ steps, currentStep, onStepChange }: StepperProps) {
                 )}
               </div>
               
-              <div className="text-center">
-                <div className="font-semibold">{step.title}</div>
-                {step.description && (
-                  <div className="text-xs opacity-80 mt-1 line-clamp-2">
-                    {step.description}
-                  </div>
-                )}
+              <div className="text-center min-w-0">
+                <div className="font-medium text-sm truncate">{step.title}</div>
               </div>
-            </Button>
+            </div>
           ))}
         </div>
         
         {/* 进度条 */}
         <div className="relative">
-          <div className="h-3 bg-gray-200 rounded-full overflow-hidden mb-8">
-            <div className="h-3 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500 ease-out"
+          <div className="h-2 bg-gray-200 rounded-full overflow-hidden mb-3">
+            <div className="h-2 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500 ease-out"
                  style={{ width: `${(currentStep / (steps.length - 1)) * 100}%` }}>
             </div>
           </div>

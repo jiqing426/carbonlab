@@ -48,7 +48,11 @@ export const getCoursesForComponent = async (): Promise<Course[]> => {
     hasNext: boolean;
     hasPrevious: boolean;
     data: Course[];
-  }>('/api/courses', { page: 0, size: 10 });
+  }>('/api/courses', { 
+    page: 0, 
+    size: 10,
+    app: process.env.NEXT_PUBLIC_TALE_APP_KEY || ''
+  });
 
   return (response.data?.data || []).map(course => ({
     ...course,
@@ -81,7 +85,7 @@ export const getCourseUnitsForComponent = async (courseId: string) => {
   console.log('正在请求课程单元，courseId:', courseId);
   try {
     const response = await platoApiGet<CourseUnit[]>(
-      `/api/courses/${courseId}/units`
+      `/api/v1/courses/${courseId}/units`
     );
     console.log('API 响应:', response);
     return {

@@ -5,7 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { experiments, courses, modules } from "@/lib/database"
+import { experiments, modules } from "@/lib/database"
 import {
   getStudentProgressOverview,
   getExperimentCompletionStats,
@@ -35,7 +35,7 @@ export default function AdminPage() {
   // 统计数据
   const stats = {
     experiments: experiments.length,
-    courses: courses.length,
+    courses: 0, // 临时设置为0，因为courses在database.ts中不存在
     modules: modules.length,
     users: students.length,
   }
@@ -456,4 +456,4 @@ export default function AdminPage() {
         </div>
       </div>
   )
-} 
+}

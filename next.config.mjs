@@ -13,6 +13,16 @@ const nextConfig = {
   typescript: {
     ignoreBuildErrors: true,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'tale-1320843286.cos.ap-shanghai.myqcloud.com',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
   experimental: {
     webpackBuildWorker: true,
     parallelServerBuildTraces: true,

@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Stepper } from "@/components/experiment-stepper"
+import { Toaster } from "@/components/ui/toaster"
 import {
   IntroductionStep,
   SimulationSetupStep,
@@ -17,6 +18,34 @@ import {
 export default function CarbonTradingSimulationPage() {
   // 使用数字索引来匹配 Stepper 组件的接口
   const [currentStepIndex, setCurrentStepIndex] = useState(0)
+
+  // 检查是否有需要恢复的实验数据
+  useEffect(() => {
+    const savedData = localStorage.getItem('carbonTradingSimulationData');
+    if (savedData) {
+      try {
+        const parsedData = JSON.parse(savedData);
+        console.log("恢复实验数据:", parsedData);
+
+        // 将数据转换为页面需要的格式
+        const restoredYearlyRecords = parsedData.yearlyRecords || [];
+        const restoredUpgradeHistory = parsedData.upgradeHistory || [];
+
+        // 设置年度记录和升级历史
+        setYearlyRecords(restoredYearlyRecords);
+        setUpgradeHistory(restoredUpgradeHistory);
+
+        // 直接跳转到ESG报告页面
+        setCurrentStepIndex(4); // ESG报告是第5步，索引为4
+
+        // 清除localStorage中的数据
+        localStorage.removeItem('carbonTradingSimulationData');
+      } catch (error) {
+        console.error("恢复实验数据失败:", error);
+        localStorage.removeItem('carbonTradingSimulationData');
+      }
+    }
+  }, []);
   
   // 定义步骤配置
   const steps = [
@@ -165,6 +194,7 @@ export default function CarbonTradingSimulationPage() {
           />
         )}
       </div>
+      <Toaster />
     </div>
   )
 } 

@@ -247,7 +247,7 @@ export const modules: Module[] = [
     color: "emerald",
     gradient: "from-green-600 to-emerald-700",
     experimentIds: ["carbon-monitoring-analysis"],
-    courseIds: ["digital-carbon-rules", "carbon-market-trading", "digital-carbon-monitoring"],
+    courseIds: ["7749127e-03ed-4740-8d4e-17d3b49eaf96",],
   },
   {
     id: "carbon-calculate",
@@ -257,7 +257,7 @@ export const modules: Module[] = [
     color: "blue",
     gradient: "from-blue-600 to-indigo-700",
     experimentIds: ["project-carbon-calculation", "product-carbon-footprint"],
-    courseIds: ["carbon-accounting-standards", "carbon-accounting-management"],
+    courseIds: ["7749127e-03ed-4740-8d4e-17d3b49eaf96"],
   },
   {
     id: "carbon-trading",
@@ -267,7 +267,7 @@ export const modules: Module[] = [
     color: "purple",
     gradient: "from-purple-600 to-violet-700",
     experimentIds: ["carbon-trading-simulation", "carbon-financial-product-design"],
-    courseIds: ["carbon-trading-fundamentals", "carbon-derivatives"],
+    courseIds: ["7749127e-03ed-4740-8d4e-17d3b49eaf96"],
   },
   {
     id: "carbon-neutral",
@@ -277,7 +277,7 @@ export const modules: Module[] = [
     color: "orange",
     gradient: "from-orange-600 to-amber-700",
     experimentIds: ["global-carbon-neutral-prediction"],
-    courseIds: ["renewable-energy-integration", "carbon-capture-technologies"],
+    courseIds: ["7749127e-03ed-4740-8d4e-17d3b49eaf96"],
   },
 ]
 

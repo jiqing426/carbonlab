@@ -1,5 +1,5 @@
 const API_BASE_URL =
-  process.env.NEXT_PUBLIC_TALE_BACKEND_URL || process.env.TALE_BASE_URL;
+  process.env.NEXT_PUBLIC_TALE_BACKEND_URL || process.env.TALE_BASE_URL || process.env.NEXT_PUBLIC_TALE_BASE_URL;
 const PLATO_BASE_URL =
   process.env.NEXT_PUBLIC_PLATO_BASE_URL || process.env.PLATO_BASE_URL;
   

@@ -8,9 +8,11 @@ import { getCoursesForComponent, Course } from "@/lib/api/courses"
 import { HeroBanner } from "@/components/home/HeroBanner"
 import Link from "next/link"
 import Image from "next/image"
-import { FileText, BarChart3, ChevronLeft, ChevronRight } from "lucide-react"
+import { FileText, BarChart3, ChevronLeft, ChevronRight, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { useRouter } from "next/navigation"
+import { experiments } from "@/lib/database"
+import { ExperimentLink } from "@/components/ui/feature-link"
 
 // 实验相关函数（暂时保留，等待实验功能开发）
 const getModuleBgClass = (module: string) => {
@@ -324,7 +326,8 @@ export default function Home() {
             tag: '数据洞察',
             date: item.date ? new Date(item.date).toLocaleDateString('zh-CN') : '未知日期',
             source: item.source || '未知来源',
-            url: item.url || '#'
+            url: item.url || '#',
+            fileType: item.fileType || 'unknown'
           })));
         }
         
@@ -380,10 +383,9 @@ export default function Home() {
       setLoading(true);
       try {
         const coursesData = await getCoursesForComponent();
-        // 只显示已上线的课程，并且限制为4个
+        // 只显示已上线的课程
         const availableCourses = coursesData
-          .filter(course => course.isEnabled)
-          .slice(0, 4);
+          .filter(course => course.isEnabled);
         setCourses(availableCourses);
       } catch (error) {
         console.error('获取课程数据失败:', error);
@@ -439,7 +441,6 @@ export default function Home() {
       {/* Main content */}
       <main className="max-w-7xl mx-auto px-20 py-12">
         <HeroBanner />
-
         <section id="courses" className="mb-9">
           <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">热门课程</h2>
           <p className="mb-8 text-gray-600">探索我们平台上的精选课程，每个课程都包含了系统化的学习路径和丰富的实践内容，帮助您从零开始掌握碳经济相关知识。</p>
@@ -465,6 +466,7 @@ export default function Home() {
                     icon: "book",
                     module: "carbon-monitor", // 默认模块
                     image: course.coverUrl || undefined,
+                    coverImageKey: course.coverImageKey || undefined,
                   }}
                 />
               ))}
@@ -472,8 +474,7 @@ export default function Home() {
           )}
         </section>
 
-        {/* 实验部分暂时注释掉，等待后续开发 */}
-        {/* <section id="experiments" className="mb-9">
+        <section id="experiments" className="mb-9">
           <h2 className="text-2xl font-bold mb-6 text-gray-800 border-b pb-2">热门实验</h2>
           <p className="mb-8 text-gray-600">探索我们平台上的精选模拟实验，每个实验都提供了交互控制，让您能够调整参数，观察变化。更多实验可在各领域模块页面中找到。</p>
 
@@ -514,6 +515,7 @@ export default function Home() {
                   <ExperimentLink
                     href={experiment.route || '#'}
                     experimentName={experiment.title}
+                    moduleId={experiment.module}
                     className={`inline-block ${getModuleButtonClass(experiment.module)} text-white font-medium px-4 py-2 rounded-lg transition duration-300 transform hover:scale-105`}
                   >
                     <BookOpen className="h-4 w-4 inline-block mr-2" />
@@ -523,7 +525,7 @@ export default function Home() {
               </div>
             ))}
           </div>
-        </section> */}
+        </section>
 
 
         {/* 双碳快讯（新版） */}
@@ -677,10 +679,21 @@ export default function Home() {
                     <ul className="space-y-4">
                       {latestData.map((item, idx) => (
                         <li key={idx} className="pb-3 border-b border-gray-100">
-                          <a href={item.url} className="flex justify-between items-start transition-all duration-300 hover:text-green-600 hover:underline">
+                          <a 
+                            href={item.url} 
+                            className="flex justify-between items-start transition-all duration-300 hover:text-green-600 hover:underline"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              const { handleFileClick } = require('@/lib/utils/file-navigation');
+                              handleFileClick({
+                                url: item.url,
+                                fileType: (item as any).fileType,
+                                title: item.title
+                              }, e);
+                            }}
+                          >
                             <div>
                               <h5 className="font-medium">{item.title}</h5>
-                              <p className="text-sm text-gray-400 mt-1">{item.desc}</p>
                             </div>
                             <span className="text-xs bg-green-100 text-green-600 px-2 py-1 rounded-full">{item.tag}</span>
                           </a>

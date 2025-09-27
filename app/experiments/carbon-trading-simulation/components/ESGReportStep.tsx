@@ -1,13 +1,15 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogClose } from "@/components/ui/dialog"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { ArrowLeft, CheckCircle, Leaf, Users, Shield, TrendingUp, Award, FileText, Download } from "lucide-react"
-import { SimulationData } from "./index"
+import { ArrowLeft, CheckCircle, Leaf, Users, Shield, TrendingUp, Award, FileText, Download, Code } from "lucide-react"
+import { SimulationData, ESGReportData } from "./index"
+import { saveTaskData } from "@/lib/api/tasks"
+import { toast } from "sonner"
 
 interface ESGReportStepProps {
   simulationData: SimulationData
@@ -20,6 +22,8 @@ interface ESGReportStepProps {
 export function ESGReportStep({ simulationData, onPrevious, onComplete, yearlyRecords, upgradeHistory }: ESGReportStepProps) {
   const { companyState } = simulationData
   const [showFinishDialog, setShowFinishDialog] = useState(false)
+  const [showJsonDialog, setShowJsonDialog] = useState(false)
+  const [hasSavedData, setHasSavedData] = useState(false)
 
   // 计算关键指标
   const totalProfit = yearlyRecords.reduce((sum, y) => sum + (y.yearlyProfit || 0), 0)
@@ -206,6 +210,167 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete, yearlyRe
   }
 
   const recommendations = generateRecommendations()
+
+  // 保存ESG报告数据到任务接口
+  const saveESGReportData = async () => {
+    if (hasSavedData) return; // 避免重复保存
+
+    try {
+      const esgReportData = generateESGReportJSON();
+
+      const taskData = {
+        task_title: `碳交易模拟实验-${new Date().toLocaleString("zh-CN", { year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hour12: false }).replace(/\//g, "-").replace(/,/g, "")}`,
+        task_input: {
+          content: "企业碳管理经营模拟实验",
+        },
+        task_output: {
+          ...esgReportData,
+        },
+        task_type: "carbon-trading-simulation",
+        task_status: "completed",
+      };
+
+      const result = await saveTaskData(taskData);
+
+      if (result.success) {
+        console.log("碳交易模拟实验数据保存成功:", result.data);
+        setHasSavedData(true);
+        toast.success("实验数据已保存", {
+          description: "ESG报告已成功保存到系统中",
+        });
+      } else {
+        console.error("保存任务数据失败:", result.error);
+        toast.error("保存失败", {
+          description: result.error || "实验数据保存时出现错误，请稍后重试",
+        });
+      }
+    } catch (error) {
+      console.error("保存任务数据时发生错误:", error);
+      toast.error("保存失败", {
+        description: "网络错误，请检查网络连接后重试",
+      });
+    }
+  };
+
+  
+  // 生成ESG报告JSON数据
+  const generateESGReportJSON = (): ESGReportData => {
+    return {
+      // 基本信息
+      reportDate: new Date().toISOString().split('T')[0],
+      simulationPeriod: {
+        startYear: 2024,
+        endYear: 2024 + Math.min(yearlyRecords.length, 5) - 1,
+        totalYears: Math.min(yearlyRecords.length, 5)
+      },
+
+      // ESG评分
+      esgScores: {
+        environment: esgScore.environment,
+        social: esgScore.social,
+        governance: esgScore.governance,
+        overall: esgScore.overall
+      },
+      overallRating: {
+        rating: overallRating.rating as "AAA" | "AA" | "A" | "BBB" | "BB" | "B",
+        color: overallRating.color,
+        bg: overallRating.bg
+      },
+
+      // 环境绩效指标
+      environmentalMetrics: {
+        carbonFootprint: carbonData,
+        carbonAllowanceUsageRate: totalAllowance > 0 ? Math.min(100, (totalCarbonEmission / totalAllowance) * 100) : 0,
+        totalUpgradeInvestment: totalUpgradeInvest,
+        energyUpgradeCount: totalEnergyUpgradeCount,
+        emissionUpgradeCount: totalEmissionUpgradeCount,
+        avgProductCarbonLabel: avgCarbonLabel,
+        allowanceTradingIncome: totalAllowanceTraded,
+        carbonCompliance: totalCarbonEmission <= totalAllowance
+      },
+
+      // 社会与治理绩效
+      socialGovernanceMetrics: {
+        operationalYears: Math.min(yearlyRecords.length, 5),
+        finalCash: finalCash,
+        totalProfit: totalProfit,
+        financialHealth: finalCash >= 0 ? "健康" : "困难",
+        sustainabilityInvestment: totalUpgradeInvest > 0,
+        allowanceTrading: totalAllowanceTraded > 0,
+        longTermPlanning: yearlyRecords.length >= 5
+      },
+
+      // 年度经营记录
+      yearlyRecords: yearlyRecords.map((record, index) => ({
+        year: 2024 + index,
+        productionQuantity: record.productionQuantity || 0,
+        yearlyProfit: record.yearlyProfit || 0,
+        cashAsset: record.cashAsset || 0,
+        carbonEmission: record.carbonEmission || 0,
+        carbonAllowance: record.carbonAllowance || 0,
+        quotaBalance: record.quotaBalance || 0,
+        quotaIncome: record.quotaIncome || 0,
+        energyUpgradeCount: record.energyUpgradeCount || 0,
+        emissionUpgradeCount: record.emissionUpgradeCount || 0,
+        productCarbonLabel: record.productCarbonLabel || 0
+      })),
+
+      // 技术升级历史
+      upgradeHistory: upgradeHistory.map(upgrade => ({
+        year: upgrade.year,
+        quarter: 1, // 默认为第一季度
+        type: upgrade.type,
+        fromLevel: upgrade.fromLevel,
+        toLevel: upgrade.toLevel,
+        cost: upgrade.type === 'energy' ? 250000 : 200000
+      })),
+
+      // 碳配额管理记录
+      carbonAllowanceRecords: Array.isArray(companyState.carbonAllowances)
+        ? companyState.carbonAllowances.slice(0, companyState.currentYear).map(allowance => ({
+            year: allowance.year,
+            allowance: allowance.allowance,
+            used: allowance.used,
+            traded: allowance.traded,
+            tradingCost: allowance.tradingCost,
+            compliance: allowance.used <= allowance.allowance
+          }))
+        : [],
+
+      // ESG改进建议
+      recommendations: recommendations.map(rec => ({
+        category: rec.category as "环境" | "社会" | "治理" | "综合",
+        priority: rec.priority as "高" | "中" | "低",
+        suggestion: rec.suggestion
+      })),
+
+      // 报告总结
+      summary: {
+        mainAchievements: [
+          `实现总利润 ${totalProfit.toLocaleString()} 元`,
+          `完成 ${totalEnergyUpgradeCount + totalEmissionUpgradeCount} 次技术升级`,
+          `ESG综合评级达到 ${overallRating.rating} 级`
+        ],
+        developmentProspects: "持续推进清洁技术创新，深化碳中和战略实施，提升ESG管理水平",
+        esgValueReflection: {
+          environmentalValue: `通过${totalEnergyUpgradeCount + totalEmissionUpgradeCount}次技改投资，累计投入${totalUpgradeInvest.toLocaleString()}元，有效降低碳排放强度`,
+          socialValue: `在碳约束下实现${totalProfit >= 0 ? '盈利' : '经营'}，最终现金${finalCash.toLocaleString()}元，展现可持续发展能力`,
+          governanceValue: `完成${yearlyRecords.length}年经营规划，${totalAllowanceTraded > 0 ? '积极开展配额交易' : '建立配额管理机制'}，体现风险管理水平`
+        }
+      },
+
+      // 关键统计数据
+      keyStatistics: {
+        totalCarbonEmission: totalCarbonEmission,
+        totalAllowance: totalAllowance,
+        totalUpgradeInvestment: totalUpgradeInvest,
+        totalEnergyUpgradeCount: totalEnergyUpgradeCount,
+        totalEmissionUpgradeCount: totalEmissionUpgradeCount,
+        totalAllowanceTraded: totalAllowanceTraded,
+        avgCarbonLabel: avgCarbonLabel
+      }
+    }
+  }
 
   // 下载ESG报告功能 - 使用pdfmake生成PDF，支持中文
   const downloadESGReport = async () => {
@@ -680,14 +845,24 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete, yearlyRe
         </Button>
         
         <div className="flex gap-2">
+          <Button variant="outline" className="bg-green-50 hover:bg-green-100" onClick={() => setShowJsonDialog(true)}>
+            <Code className="mr-2 h-4 w-4" />
+            查看JSON数据
+          </Button>
+          
           <Button variant="outline" className="bg-blue-50 hover:bg-blue-100" onClick={() => downloadESGReport()}>
             <Download className="mr-2 h-4 w-4" />
             下载报告
           </Button>
           
-          <Button onClick={() => setShowFinishDialog(true)} className="bg-purple-600 hover:bg-purple-700">
+          <Button onClick={async () => {
+            if (!hasSavedData) {
+              await saveESGReportData();
+            }
+            setShowFinishDialog(true);
+          }} className="bg-purple-600 hover:bg-purple-700">
             <CheckCircle className="mr-2 h-4 w-4" />
-            完成实验
+            {hasSavedData ? "完成实验 ✓" : "完成实验"}
           </Button>
         </div>
       </div>
@@ -698,12 +873,19 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete, yearlyRe
           <DialogHeader>
             <DialogTitle>🎉 恭喜完成实验！</DialogTitle>
           </DialogHeader>
-          <div className="text-center text-lg font-medium my-4">您已顺利完成企业碳管理经营模拟实验。</div>
+          <div className="text-center text-lg font-medium my-4">
+            您已顺利完成企业碳管理经营模拟实验。
+            {hasSavedData && (
+              <div className="text-sm text-green-600 mt-2">
+                ✓ 实验数据已保存到系统
+              </div>
+            )}
+          </div>
           <DialogFooter className="flex flex-col gap-2">
             <Button onClick={() => { setShowFinishDialog(false); downloadESGReport(); }} className="w-full bg-blue-600 hover:bg-blue-700">
               <Download className="mr-2 h-4 w-4" />下载ESG报告
             </Button>
-            <Button onClick={() => { 
+            <Button onClick={() => {
               if (typeof window !== 'undefined') {
                 window.location.href = "/"
               }
@@ -711,6 +893,58 @@ export function ESGReportStep({ simulationData, onPrevious, onComplete, yearlyRe
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* JSON数据查看弹窗 */}
+      <Dialog open={showJsonDialog} onOpenChange={setShowJsonDialog}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>ESG报告JSON数据结构</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              以下是基于当前模拟数据生成的完整ESG报告JSON结构，可用于历史数据存储和未来展示：
+            </p>
+            <div className="bg-gray-50 p-4 rounded-lg">
+              <pre className="text-xs overflow-x-auto whitespace-pre-wrap">
+                {JSON.stringify(generateESGReportJSON(), null, 2)}
+              </pre>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  navigator.clipboard.writeText(JSON.stringify(generateESGReportJSON(), null, 2))
+                  alert('JSON数据已复制到剪贴板')
+                }}
+              >
+                复制JSON数据
+              </Button>
+              <Button 
+                variant="outline" 
+                onClick={() => {
+                  const jsonData = generateESGReportJSON()
+                  const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' })
+                  const url = URL.createObjectURL(blob)
+                  const a = document.createElement('a')
+                  a.href = url
+                  a.download = `ESG-Report-${jsonData.reportDate}.json`
+                  document.body.appendChild(a)
+                  a.click()
+                  document.body.removeChild(a)
+                  URL.revokeObjectURL(url)
+                }}
+              >
+                下载JSON文件
+              </Button>
+            </div>
+          </div>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline">关闭</Button>
+            </DialogClose>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
-} 
+}

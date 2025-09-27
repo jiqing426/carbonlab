@@ -24,7 +24,7 @@ const CACHE_EXPIRY = 1000 * 60 * 15; // 缓存有效期：15分钟
 export default function CourseLearningPage({
   params,
 }: {
-  params: { unitId: string };
+  params: Promise<{ unitId: string }>;
 }) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [unit, setUnit] = useState<UnitWithLessons | null>(null);
@@ -39,7 +39,8 @@ export default function CourseLearningPage({
 
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { unitId } = useParams();
+  const resolvedParams = React.use(params);
+  const { unitId } = resolvedParams;
 
   // 从 userStore 获取用户信息
   const { user } = useUserStore();

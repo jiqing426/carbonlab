@@ -12,6 +12,7 @@ import {
 import Link from "next/link"
 import { Globe, Database, Search, FileText } from "lucide-react"
 import { useState, useEffect } from "react"
+import { handleFileClick } from "@/lib/utils/file-navigation"
 
 // 报告数据分类
 const reportCategories = [
@@ -161,7 +162,7 @@ export default function ReportsPage() {
         const { contentSyncService } = await import('@/lib/services/content-sync-service');
         
         // 获取研究报告数据
-        const reports = await contentSyncService.getPageContent('chinaReports');
+        const reports = await contentSyncService.getResearchReportContent();
         
         if (reports.length > 0) {
           // 更新中国报告分类的数据
@@ -172,7 +173,8 @@ export default function ReportsPage() {
                 datasets: reports.map(report => ({
                   title: report.title,
                   url: report.url || '/dashboard/resources/repo_004',
-                  description: report.description || '暂无描述'
+                  description: report.description || '暂无描述',
+                  fileType: report.fileType
                 }))
               };
             }
@@ -237,16 +239,18 @@ export default function ReportsPage() {
             <CardContent className="p-6">
               <div className="grid gap-4">
                 {category.datasets.map((report, index) => (
-                  <a
+                  <div
                     key={index}
-                    href={report.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block p-4 rounded-lg border hover:bg-gray-50 transition-colors"
+                    onClick={(e) => handleFileClick({
+                      url: report.url,
+                      fileType: report.fileType,
+                      title: report.title
+                    }, e)}
+                    className="block p-4 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer"
                   >
                     <h3 className="font-bold text-lg md:text-xl text-gray-900 mb-1">{report.title}</h3>
                     <p className="text-sm text-gray-600">{report.description}</p>
-                  </a>
+                  </div>
                 ))}
               </div>
             </CardContent>
@@ -280,4 +284,4 @@ export default function ReportsPage() {
       </div>
     </div>
   )
-} 
+}

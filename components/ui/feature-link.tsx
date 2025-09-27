@@ -63,12 +63,14 @@ export function ExperimentLink({
   href, 
   children, 
   className = "", 
-  experimentName 
+  experimentName,
+  moduleId
 }: {
   href: string;
   children: React.ReactNode;
   className?: string;
   experimentName: string;
+  moduleId?: string;
 }) {
   const { isLoggedIn } = useUserStore();
   const router = useRouter();
@@ -82,8 +84,13 @@ export function ExperimentLink({
       return;
     }
 
-    // 已登录，跳转到实验页面
-    router.push(href);
+    // 已登录，跳转到对应的模块页面而不是直接跳转到实验页面
+    if (moduleId) {
+      router.push(`/modules/${moduleId}`);
+    } else {
+      // 如果没有moduleId，保持原有的跳转逻辑
+      router.push(href);
+    }
   };
 
   return (
@@ -106,4 +113,4 @@ export function ExperimentLink({
 }
 
 // 课程链接现在不需要登录拦截，使用普通的Link组件即可
-// 如果需要添加登录拦截，可以重新实现这个组件 
+// 如果需要添加登录拦截，可以重新实现这个组件

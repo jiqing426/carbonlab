@@ -1,21 +1,26 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { notFound, useParams } from "next/navigation"
-import { modules, Module, Difficulty, getModuleExperiments, Course } from "@/lib/database"
-import { getCoursesByModule } from "@/lib/courses"
+import { modules, Module, Difficulty, getModuleExperiments } from "@/lib/database"
 import ModuleHeader from "@/components/module/ModuleHeader"
 import ExperimentList from "@/components/module/ExperimentList"
 import CourseList from "@/components/module/CourseList"
+import ExperimentHistory from "@/components/module/ExperimentHistory"
 import SearchAndFilter from "@/components/module/SearchAndFilter"
 import Footer from "@/components/home/Footer"
 import Link from "next/link"
 import { MonitorIcon, CalculateIcon, TradeIcon, NeutralIcon } from "@/components/module/ModuleIcons"
+import { getQuizzesByIds, Quiz } from "@/lib/api/quizzes"
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Toaster } from "@/components/ui/toaster"
 import React from "react"
 
 export default function ModulePage() {
   const [searchTerm, setSearchTerm] = useState("")
   const [difficultyFilter, setDifficultyFilter] = useState<Difficulty | "all">("all")
+  const [courses, setCourses] = useState<Quiz[]>([])
+  const [coursesLoading, setCoursesLoading] = useState(true)
 
   const params = useParams<{ "module-id": string }>()
   const moduleId = params["module-id"]
@@ -25,11 +30,31 @@ export default function ModulePage() {
     notFound()
   }
 
-  // 获取当前模块的所有课程
-  const moduleCourses = getCoursesByModule(moduleId) as Course[]
-  
   // 获取当前模块的所有实验
   const moduleExperiments = getModuleExperiments(moduleId)
+
+  // 获取当前模块的课程
+  useEffect(() => {
+    const fetchCourses = async () => {
+      if (module.courseIds && module.courseIds.length > 0) {
+        setCoursesLoading(true)
+        try {
+          const courseData = await getQuizzesByIds(module.courseIds)
+          setCourses(courseData)
+        } catch (error) {
+          console.error('获取课程数据失败:', error)
+          setCourses([])
+        } finally {
+          setCoursesLoading(false)
+        }
+      } else {
+        setCourses([])
+        setCoursesLoading(false)
+      }
+    }
+
+    fetchCourses()
+  }, [module.courseIds])
 
   // 根据 module.id 选择合适的图标
   const getModuleIcon = () => {
@@ -48,12 +73,12 @@ export default function ModulePage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 flex flex-col">
       {/* 模块头部，包含导航栏 */}
       <ModuleHeader module={module} />
 
       {/* 模块内容容器 - 添加上边距，避免被固定导航栏遮挡 */}
-      <div className="pt-6">
+      <div className="flex-1 pt-6">
         {/* 模块介绍部分 */}
         <section className="mb-12 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className={`bg-gradient-to-r rounded-xl shadow-lg overflow-hidden ${
@@ -144,23 +169,40 @@ export default function ModulePage() {
             onDifficultyChange={setDifficultyFilter}
           />
 
-          {/* 课程列表 */}
-          <CourseList
-            courses={moduleCourses}
-            searchTerm={searchTerm}
-            difficultyFilter={difficultyFilter}
-          />
+          {/* 内容标签页 */}
+          <Tabs defaultValue="experiments" className="mt-8">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="experiments">实验列表</TabsTrigger>
+              <TabsTrigger value="courses">课程列表</TabsTrigger>
+              <TabsTrigger value="history">实验记录</TabsTrigger>
+            </TabsList>
 
-          {/* 实验列表 */}
-          <ExperimentList
-            experiments={moduleExperiments}
-            searchTerm={searchTerm}
-            difficultyFilter={difficultyFilter}
-          />
+            <TabsContent value="experiments" className="mt-6">
+              <ExperimentList
+                experiments={moduleExperiments}
+                searchTerm={searchTerm}
+                difficultyFilter={difficultyFilter}
+              />
+            </TabsContent>
+
+            <TabsContent value="courses" className="mt-6">
+              <CourseList
+                courses={courses}
+                loading={coursesLoading}
+              />
+            </TabsContent>
+
+            <TabsContent value="history" className="mt-6">
+              <ExperimentHistory />
+            </TabsContent>
+          </Tabs>
         </main>
       </div>
 
-      <Footer />
+      <div className="mt-8">
+        <Footer />
+      </div>
+      <Toaster />
     </div>
   )
-} 
+}

@@ -8,9 +8,8 @@ import { CourseCard } from "@/components/course/CourseCard";
 import { Filter } from 'lucide-react';
 // @ts-ignore
 import debounce from 'lodash/debounce';
-import { getCourses } from "@/lib/courses";
+import { getCoursesForComponent, Course } from "@/lib/api/courses";
 import { modules, experiments, Experiment } from "@/lib/database";
-import { Course } from "@/lib/database";
 import ExperimentList from "@/components/module/ExperimentList";
 import { ExperimentLink } from "@/components/ui/feature-link";
 
@@ -40,12 +39,21 @@ export default function ResourcesPage() {
 
   useEffect(() => {
     async function fetchCourses() {
-      setLoading(true);
-      const coursesData = await getCourses();
-      setCourses(coursesData);
-      setFilteredCourses(coursesData);
-      setFilteredExperiments(experiments);
-      setLoading(false);
+      try {
+        setLoading(true);
+        const coursesData = await getCoursesForComponent();
+        const enabledCourses = coursesData.filter(course => course.isEnabled);
+        setCourses(enabledCourses);
+        setFilteredCourses(enabledCourses);
+        setFilteredExperiments(experiments);
+      } catch (error) {
+        console.error('Failed to fetch courses:', error);
+        setCourses([]);
+        setFilteredCourses([]);
+        setFilteredExperiments(experiments);
+      } finally {
+        setLoading(false);
+      }
     }
 
     fetchCourses();
@@ -53,9 +61,9 @@ export default function ResourcesPage() {
 
   useEffect(() => {
     const filtered = courses.filter(course => 
-      course.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase()) &&
-      (selectedModules.length === 0 || selectedModules.includes(course.module)) &&
-      (selectedDifficulties.length === 0 || selectedDifficulties.includes(course.difficulty))
+      course.title.toLowerCase().includes(debouncedSearchTerm.toLowerCase())
+      // 注意：API返回的课程数据没有module和difficulty字段，所以暂时移除这些过滤条件
+      // 如果需要这些过滤功能，需要在API中添加相应字段
     );
     setFilteredCourses(filtered);
 
@@ -171,8 +179,14 @@ export default function ResourcesPage() {
               <CourseCard 
                 key={course.id} 
                 course={{
-                  ...course,
-                  difficulty: difficultyMap[course.difficulty] || course.difficulty
+                  id: course.id,
+                  title: course.title,
+                  description: course.description,
+                  difficulty: "中级", // 默认难度，因为API数据中没有difficulty字段
+                  status: course.isEnabled ? "已上线" : "开发中",
+                  icon: "book", // 默认图标
+                  module: "carbon-monitor", // 默认模块，因为API数据中没有module字段
+                  image: course.coverUrl || undefined,
                 }}
               />
             ))

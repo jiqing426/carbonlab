@@ -1,5 +1,13 @@
 // 内容同步服务 - 用于将资料库的内容同步到对应的页面
-import { Repository } from '@/types/repository';
+
+// 定义Repository接口
+interface Repository {
+  id: string;
+  name: string;
+  folderName?: string;
+  controlTarget?: string;
+  displayOrder?: number;
+}
 
 export interface ContentItem {
   id: string;
@@ -8,8 +16,9 @@ export interface ContentItem {
   url?: string;
   date?: string;
   source?: string;
-  type: 'policy' | 'news' | 'data' | 'report';
+  type: 'policy' | 'news' | 'data' | 'report' | 'data-insight';
   repositoryId: string;
+  fileType?: string; // 添加文件类型字段
 }
 
 export interface SyncData {
@@ -222,21 +231,69 @@ class ContentSyncService {
     }
   }
 
-  // 专门获取数据洞察内容（对应repo_003）
+  // 专门获取数据洞察内容（使用固定folder_id）
   async getDataInsightContent(): Promise<ContentItem[]> {
     try {
-      // 直接从repo_003获取文件
-      const files = this.getRepositoryFiles('repo_003');
-      const repository = {
-        id: 'repo_003',
-        folderName: '数据洞察',
-        controlTarget: 'global-data'
-      };
+      // 使用固定的folder_id和appKey获取文件
+      const { getFiles } = await import('@/lib/api/files');
+      const appKey = process.env.NEXT_PUBLIC_TALE_APP_KEY || 'oa_HBamFxnA';
+      const filesResponse = await getFiles({ 
+        folder_id: '7ed0539a-e5d5-4406-904b-65e52a74f7f0' 
+      }, appKey);
       
-      return this.convertFilesToContentItems(files, repository as any);
+      if (filesResponse.code !== 200 || !filesResponse.data?.content) {
+        console.warn('No data insight files found or invalid response');
+        return [];
+      }
+      
+      // 将API响应转换为ContentItem格式，适配真实数据结构
+      return filesResponse.data.content.map((file: any) => ({
+        id: file.id,
+        title: file.file_name,
+        description: file.remark || '',
+        url: file.link_url || '',
+        date: file.created_at,
+        source: file.remark || '数据洞察',
+        type: 'data-insight',
+        repositoryId: file.folder_id,
+        fileType: file.file_type
+      }));
     } catch (error) {
       console.error('Failed to get data insight content:', error);
-      return [];
+      throw error;
+    }
+  }
+
+  // 专门获取研究报告内容（使用固定folder_id）
+  async getResearchReportContent(): Promise<ContentItem[]> {
+    try {
+      // 使用固定的folder_id和appKey获取文件
+      const { getFiles } = await import('@/lib/api/files');
+      const appKey = process.env.NEXT_PUBLIC_TALE_APP_KEY || 'oa_HBamFxnA';
+      const filesResponse = await getFiles({ 
+        folder_id: '948890a3-8022-41bc-aea5-b24db275ac11' 
+      }, appKey);
+      
+      if (filesResponse.code !== 200 || !filesResponse.data?.content) {
+        console.warn('No research report files found or invalid response');
+        return [];
+      }
+      
+      // 将API响应转换为ContentItem格式，适配真实数据结构
+      return filesResponse.data.content.map((file: any) => ({
+        id: file.id,
+        title: file.file_name,
+        description: file.remark || '',
+        url: file.link_url || '',
+        date: file.created_at,
+        source: file.remark || '研究报告',
+        type: 'report',
+        repositoryId: file.folder_id,
+        fileType: file.file_type
+      }));
+    } catch (error) {
+      console.error('Failed to get research report content:', error);
+      throw error;
     }
   }
 
