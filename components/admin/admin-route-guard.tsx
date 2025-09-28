@@ -19,15 +19,18 @@ export function AdminRouteGuard({
   const router = useRouter()
   const { isLoggedIn, user, isTokenExpired, initialize } = useUserStore()
   const [isInitialized, setIsInitialized] = useState(false)
+  const [hasValidated, setHasValidated] = useState(false)
 
   useEffect(() => {
-    // 初始化用户状态
-    initialize()
-    setIsInitialized(true)
-  }, [initialize])
+    // 只在首次加载时初始化用户状态
+    if (!isInitialized) {
+      initialize()
+      setIsInitialized(true)
+    }
+  }, [initialize, isInitialized])
 
   useEffect(() => {
-    if (!isInitialized) return
+    if (!isInitialized || hasValidated) return
 
     // 检查是否已登录
     if (!isLoggedIn) {
@@ -57,7 +60,10 @@ export function AdminRouteGuard({
       router.push(redirectTo)
       return
     }
-  }, [isLoggedIn, user, isTokenExpired, requiredRoles, redirectTo, router, isInitialized])
+
+    // 验证完成，标记为已验证
+    setHasValidated(true)
+  }, [isLoggedIn, user, isTokenExpired, requiredRoles, redirectTo, router, isInitialized, hasValidated])
 
   // 如果还没有初始化，显示加载状态
   if (!isInitialized) {

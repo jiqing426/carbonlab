@@ -88,7 +88,6 @@ class AppTokenService {
     document.cookie = `${tokenKey}=${tokenData.token}; ${cookieOptions}`;
     document.cookie = `${expiredKey}=${expireDate.toISOString()}; ${cookieOptions}`;
     
-    console.log('Tale token saved, expires at:', new Date(tokenData.expired_at));
   }
 
   // 从服务端API获取tale token
@@ -138,7 +137,6 @@ class AppTokenService {
     try {
       // 先尝试从cookie获取
       let token = this.getTaleTokenFromCookie();
-      console.log(token,'---------从token中获取----------')
       if (!token) {
         // 防止重复请求
         if (this.taleTokenPromise) {
@@ -146,7 +144,6 @@ class AppTokenService {
         }
         
         // 如果没有或已过期，重新获取
-        console.log('Fetching new tale token');
         this.taleTokenPromise = this.fetchTaleToken();
         
         try {
@@ -184,7 +181,6 @@ class AppTokenService {
       console.log(`App token for ${appKey} is expired or will expire soon`);
       return null;
     }
-    console.log(token,'--------app token---------')
     return token;
   }
 
@@ -205,7 +201,6 @@ class AppTokenService {
     // 更新缓存
     this.tokenCache.set(appKey, tokenData);
     
-    console.log(`App token saved for ${appKey}, expires at:`, new Date(tokenData.expired_at));
   }
 
   // 从API获取app token
@@ -331,22 +326,15 @@ class AppTokenService {
         throw new Error('No valid authentication token found');
       }
 
-      console.log(`使用${tokenSource}获取App Token:`, authToken.substring(0, 20) + '...')
 
       const backendUrl = process.env.NEXT_PUBLIC_TALE_BACKEND_URL || 'https://api.turingue.com'
-      console.log('App Token API 使用的后端URL:', backendUrl)
-
-      // 使用正确的API端点和请求方法
       const apiUrl = `${backendUrl}/app/v1/token`
-      console.log('App Token API 完整URL:', apiUrl)
-      console.log('使用POST方法，包含app_key和app_secret')
 
       // 首先尝试使用app_key + app_secret获取App Token
       let response;
       let authMethod = 'app_key + app_secret (POST)';
 
       try {
-        console.log('尝试使用app_key + app_secret获取App Token...')
         
         const appSecret = process.env.NEXT_PUBLIC_TALE_APP_SECRET || '7f785775-cfa9-44c1-bc84-80a9497a5bd5'
         
@@ -362,9 +350,9 @@ class AppTokenService {
         });
 
         if (response.ok) {
-          console.log('app_key + app_secret认证成功！');
+          // app_key + app_secret认证成功
         } else {
-          console.log('app_key + app_secret认证失败，尝试其他方式...');
+          // app_key + app_secret认证失败，尝试其他方式
           
           // 如果失败，尝试使用用户token进行认证
           authMethod = '用户token + x-t-token header';
@@ -377,9 +365,9 @@ class AppTokenService {
           });
 
           if (response.ok) {
-            console.log('用户token认证成功！');
+            // 用户token认证成功
           } else if (response.status === 401) {
-            console.log('用户token认证失败(401)，尝试其他方式...');
+            // 用户token认证失败(401)，尝试其他方式
 
             // 尝试Authorization Bearer
             authMethod = '用户token + Authorization Bearer';
@@ -392,9 +380,9 @@ class AppTokenService {
             });
 
             if (response.ok) {
-              console.log('Authorization Bearer认证成功！');
+              // Authorization Bearer认证成功
             } else {
-              console.log('所有认证方式都失败');
+              // 所有认证方式都失败
             }
           }
         }
@@ -410,7 +398,6 @@ class AppTokenService {
       }
 
       const result: AppTokenResponse = await response.json();
-      console.log('App Token API响应:', result);
 
       if (result.data && result.data.token) {
         this.saveAppToken(appKey, result.data);
@@ -431,7 +418,6 @@ class AppTokenService {
       let token = this.getAppToken(appKey);
       if (!token) {
         // 如果没有或已过期，重新获取
-        console.log(`Fetching new app token for ${appKey}`);
         token = await this.fetchAppToken(appKey);
       }
       

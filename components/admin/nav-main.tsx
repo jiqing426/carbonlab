@@ -2,6 +2,7 @@
 
 import { type LucideIcon } from "lucide-react"
 import { useState, useEffect } from "react"
+import Link from "next/link"
 
 import {
   SidebarMenu,
@@ -61,7 +62,7 @@ export function NavMain({
                           asChild
                           isActive={isMounted && pathname === subItem.url}
                         >
-                          <a
+                          <Link
                             href={subItem.url}
                             className={cn(
                               'flex items-center py-2 my-1 transition-all duration-200 rounded-md',
@@ -102,7 +103,7 @@ export function NavMain({
                                 </span>
                               )}
                             </div>
-                          </a>
+                          </Link>
                         </SidebarMenuButton>
                       </TooltipTrigger>
                       <TooltipContent
@@ -116,23 +117,18 @@ export function NavMain({
                 ) : (
                   <SidebarMenuButton
                     tooltip={subItem.title}
-                    asChild
                     isActive={isMounted && pathname === subItem.url}
                   >
-                    <a
+                    <Link
                       href={subItem.url}
                       className={cn(
-                        'flex items-center py-2 my-1 transition-all duration-200 rounded-md',
+                        'flex items-center py-2 my-1 transition-all duration-200 rounded-md w-full',
                         'text-foreground hover:text-primary relative',
                         !isCollapsed &&
                           'hover:bg-primary/5 dark:hover:bg-primary/10',
-                        'group border border-transparent',
-                        'hover:border-primary/50 dark:hover:border-primary/50',
-                        'hover:shadow-sm dark:hover:shadow-primary/10',
+                        'group',
                         pathname === subItem.url && [
                           'text-primary bg-primary/5 dark:bg-primary/10',
-                          'border-primary/50 dark:border-primary/50',
-                          'shadow-sm dark:shadow-primary/10',
                         ]
                       )}
                       title={isCollapsed ? subItem.title : undefined}
@@ -160,7 +156,7 @@ export function NavMain({
                           </span>
                         )}
                       </div>
-                    </a>
+                    </Link>
                   </SidebarMenuButton>
                 )}
               </SidebarMenuItem>

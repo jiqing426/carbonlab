@@ -7,7 +7,8 @@ import {
   BookOpen,
   BeakerIcon,
   FileText,
-  Library
+  Library,
+  UserCheck
 } from 'lucide-react'
 
 export type Route = {
@@ -55,6 +56,14 @@ export const routeGroups: RouteGroup[] = [
         description: '管理用户账号和权限',
         icon: Users,
         href: '/admin/users',
+        isAccessible: true,
+        allowedRoles: ['admin', 'manager'],
+      },
+      {
+        title: '班级管理',
+        description: '管理班级信息',
+        icon: UserCheck,
+        href: '/admin/classes',
         isAccessible: true,
         allowedRoles: ['admin', 'manager'],
       },

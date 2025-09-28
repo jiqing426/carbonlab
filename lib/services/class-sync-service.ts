@@ -1,14 +1,14 @@
-import { 
-  createUserGroup, 
-  getUserGroups, 
-  updateUserGroup, 
-  deleteUserGroup,
+import {
+  createClass as createUserGroup,
+  getClasses as getUserGroups,
+  updateClass as updateUserGroup,
+  deleteClass as deleteUserGroup,
   addMembersToUserGroup,
   removeMembersFromUserGroup,
   getUserGroupMembers,
-  CreateUserGroupRequest,
-  UpdateUserGroupRequest
-} from '@/lib/api/user-groups';
+  CreateClassRequest as CreateUserGroupRequest,
+  UpdateClassRequest as UpdateUserGroupRequest
+} from '@/lib/api/classes';
 import { UserGroup } from '@/types/tale';
 
 // 班级接口（本地）

@@ -52,7 +52,6 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
 import { getUsers } from '@/lib/api/users';
-import { getUserGroups } from '@/lib/api/user-groups';
 import { useUserStore } from '@/lib/stores/user-store';
 import { useAppTokenStore } from '@/lib/stores/app-token-store';
 import { SidebarTrigger } from '@/components/ui/sidebar';
