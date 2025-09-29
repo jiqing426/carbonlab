@@ -29,16 +29,7 @@ export const searchDatabase: SearchItem[] = [
     tags: ["碳监测", "计量", "分析", "企业碳管理"],
     keywords: ["碳监测", "计量", "分析", "企业", "碳管理", "排放", "监测技术"]
   },
-  {
-    id: 3,
-    title: "第5章 碳足迹计量",
-    description: "产品碳足迹计量方法与标准课程",
-    type: "course",
-    url: "/courses/advanced/chapter-5",
-    tags: ["碳足迹", "计量", "课程", "标准方法"],
-    keywords: ["碳足迹", "计量", "课程", "标准", "方法", "产品", "生命周期"]
-  },
-  {
+    {
     id: 4,
     title: "碳交易模拟实验",
     description: "碳市场交易机制与策略模拟实验",

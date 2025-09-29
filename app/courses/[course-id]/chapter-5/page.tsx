@@ -40,9 +40,6 @@ export default function Chapter5Page({ params }: { params: Promise<{ "course-id"
                   <BookOpen className="h-5 w-5 text-green-600" />
                   <h1 className="text-xl font-semibold">第5章 碳足迹计量</h1>
                 </div>
-                <span className="bg-green-100 text-green-800 text-xs px-2 py-1 rounded-full font-medium self-start">
-                  样章内容
-                </span>
               </div>
             </div>
             

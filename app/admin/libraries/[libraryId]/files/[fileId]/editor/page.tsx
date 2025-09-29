@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import {
   Settings,
@@ -9,6 +9,8 @@ import {
   ChevronDown,
   ChevronUp,
   Eye,
+  Upload,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -42,6 +44,7 @@ import {
 import { getFolderById } from '@/lib/api/folders';
 import { truncateDocumentTitle } from '@/lib/utils/text';
 import { toast } from 'sonner';
+import { uploadFilePreviewImage } from '@/lib/api/files';
 
 interface Repository {
   id: string;
@@ -106,6 +109,20 @@ export default function DocumentEditorPage() {
   const [saving, setSaving] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [confirmFileName, setConfirmFileName] = useState('');
+
+  // 封面图上传相关状态
+  const [coverImageUploading, setCoverImageUploading] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // 同步预览URL
+  useEffect(() => {
+    if (editedDocument?.preview_image_url !== undefined) {
+      setPreviewUrl(editedDocument.preview_image_url);
+    } else if (editedDocument === null && document?.preview_image_url) {
+      setPreviewUrl(document.preview_image_url);
+    }
+  }, [editedDocument, document]);
 
   // 加载数据
   useEffect(() => {
@@ -204,6 +221,86 @@ export default function DocumentEditorPage() {
       setSaving(false);
       setIsDeleteDialogOpen(false);
       setConfirmFileName('');
+    }
+  };
+
+  // 封面图上传处理函数
+  const handleCoverImageUpload = async (file: File) => {
+    if (!file || !document?.id || !process.env.NEXT_PUBLIC_TALE_APP_KEY) return;
+
+    // 验证文件类型
+    if (!file.type.startsWith('image/')) {
+      toast.error('请选择图片文件');
+      return;
+    }
+
+    // 验证文件大小 (限制为5MB)
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('图片文件大小不能超过5MB');
+      return;
+    }
+
+    setCoverImageUploading(true);
+
+    try {
+      // 创建临时预览URL
+      const objectUrl = URL.createObjectURL(file);
+      setPreviewUrl(objectUrl);
+
+      // 上传文件
+      const result = await uploadFilePreviewImage(
+        document.id,
+        file,
+        process.env.NEXT_PUBLIC_TALE_APP_KEY
+      );
+
+      // 清理临时URL
+      URL.revokeObjectURL(objectUrl);
+
+      // 更新文档的 preview_image_url
+      setEditedDocument({
+        ...editedDocument || document,
+        preview_image_url: result.preview_image_url,
+      });
+
+      setPreviewUrl(result.preview_image_url);
+      toast.success('封面图上传成功');
+    } catch (error) {
+      console.error('上传封面图失败:', error);
+      toast.error(error instanceof Error ? error.message : '上传封面图失败');
+
+      // 恢复原来的预览图
+      setPreviewUrl((editedDocument || document)?.preview_image_url || null);
+    } finally {
+      setCoverImageUploading(false);
+    }
+  };
+
+  // 删除封面图
+  const handleRemoveCoverImage = () => {
+    if (!editedDocument && !document) return;
+
+    setPreviewUrl(null);
+    setEditedDocument({
+      ...editedDocument || document,
+      preview_image_url: undefined,
+    });
+
+    toast.success('封面图已删除');
+  };
+
+  // 触发文件选择
+  const triggerFileSelect = () => {
+    fileInputRef.current?.click();
+  };
+
+  // 处理文件选择
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      handleCoverImageUpload(file);
+      // 清空文件输入，允许重复选择同一文件
+      event.target.value = '';
     }
   };
 
@@ -367,6 +464,94 @@ export default function DocumentEditorPage() {
                   </div>
 
                   <div className='space-y-4'>
+                    {/* 封面图上传和显示 */}
+                    <div className='space-y-2'>
+                      <Label>封面图</Label>
+                      {isEditMode ? (
+                        <div className='space-y-3'>
+                          {/* 当前封面图预览 */}
+                          {previewUrl ? (
+                            <div className='relative'>
+                              <div className='flex justify-center'>
+                                <img
+                                  src={previewUrl}
+                                  alt={`${document.file_name} 封面图`}
+                                  width={160}
+                                  height={224}
+                                  className='max-w-32 max-h-44 object-contain rounded-lg shadow-sm border'
+                                />
+                              </div>
+                              <Button
+                                type='button'
+                                variant='outline'
+                                size='sm'
+                                onClick={handleRemoveCoverImage}
+                                className='mt-2 w-full'
+                                disabled={coverImageUploading}
+                              >
+                                <X className='w-4 h-4 mr-2' />
+                                删除封面图
+                              </Button>
+                            </div>
+                          ) : (
+                            <div className='border-2 border-dashed border-gray-300 rounded-lg p-6 text-center'>
+                              <Upload className='w-8 h-8 text-gray-400 mx-auto mb-2' />
+                              <p className='text-sm text-gray-600 mb-3'>
+                                上传封面图
+                              </p>
+                              <Button
+                                type='button'
+                                variant='outline'
+                                size='sm'
+                                onClick={triggerFileSelect}
+                                disabled={coverImageUploading}
+                              >
+                                {coverImageUploading ? (
+                                  <>
+                                    <Loader2 className='w-4 h-4 mr-2 animate-spin' />
+                                    上传中...
+                                  </>
+                                ) : (
+                                  <>
+                                    <Upload className='w-4 h-4 mr-2' />
+                                    选择图片
+                                  </>
+                                )}
+                              </Button>
+                              <p className='text-xs text-gray-500 mt-2'>
+                                支持 JPG、PNG、GIF、WebP 格式，最大 5MB
+                              </p>
+                            </div>
+                          )}
+
+                          {/* 隐藏的文件输入 */}
+                          <input
+                            ref={fileInputRef}
+                            type='file'
+                            accept='image/jpeg,image/jpg,image/png,image/gif,image/webp'
+                            onChange={handleFileSelect}
+                            className='hidden'
+                            disabled={coverImageUploading}
+                          />
+                        </div>
+                      ) : (
+                        // 查看模式下的封面图显示
+                        document.preview_image_url && (
+                          <div className='text-center'>
+                            <div className='flex justify-center'>
+                              <img
+                                src={document.preview_image_url}
+                                alt={`${document.file_name} 封面图`}
+                                width={160}
+                                height={224}
+                                className='max-w-32 max-h-44 object-contain rounded-lg shadow-sm border'
+                              />
+                            </div>
+                          </div>
+                        )
+                      )}
+                    </div>
+
                     {/* 文件名 */}
                     <div className='space-y-2'>
                       <Label htmlFor='fileName'>文件名</Label>

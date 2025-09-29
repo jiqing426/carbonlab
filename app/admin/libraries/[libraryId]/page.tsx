@@ -344,8 +344,8 @@ export default function LibraryDetailPage() {
   };
 
   const handleViewDocument = async (doc: Document) => {
-    // 跳转到文件查看页面
-    router.push(`/admin/libraries/${libraryId}/files/${doc.id}/viewer`);
+    // 在新窗口中打开文件查看页面
+    window.open(`/admin/libraries/${libraryId}/files/${doc.id}/viewer`, '_blank');
   };
 
   const handleDeleteClick = (doc: Document) => {

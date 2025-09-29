@@ -318,7 +318,11 @@ export default function FileViewerPage() {
 
         const pdfUrl = getFinalFileUrl(fileData, presignedUrls);
         return pdfUrl ? (
-          <PDFViewer pdfUrl={pdfUrl} />
+          <div className='flex flex-col h-full'>
+            <div className='flex-1'>
+              <PDFViewer pdfUrl={pdfUrl} />
+            </div>
+          </div>
         ) : (
           <div className='flex items-center justify-center h-full bg-muted'>
             <div className='text-center'>
@@ -346,7 +350,7 @@ export default function FileViewerPage() {
         return videoUrl ? (
           <DynamicVideoPlayer
             src={videoUrl}
-            poster={(fileData.file_attr as { poster?: string })?.poster}
+            poster={fileData.preview_image_url || (fileData.file_attr as { poster?: string })?.poster}
           />
         ) : (
           <div className='flex items-center justify-center h-full bg-muted'>
@@ -422,7 +426,11 @@ export default function FileViewerPage() {
 
         const docxUrl = getFinalFileUrl(fileData, presignedUrls);
         return docxUrl ? (
-          <DocxViewer docxUrl={docxUrl} fileName={fileData.file_name} />
+          <div className='flex flex-col h-full'>
+            <div className='flex-1'>
+              <DocxViewer docxUrl={docxUrl} fileName={fileData.file_name} />
+            </div>
+          </div>
         ) : (
           <div className='flex items-center justify-center h-full bg-muted'>
             <div className='text-center'>
@@ -448,7 +456,11 @@ export default function FileViewerPage() {
 
         const pptUrl = getFinalFileUrl(fileData, presignedUrls);
         return pptUrl ? (
-          <PptViewer pptUrl={pptUrl} fileName={fileData.file_name} />
+          <div className='flex flex-col h-full'>
+            <div className='flex-1'>
+              <PptViewer pptUrl={pptUrl} fileName={fileData.file_name} />
+            </div>
+          </div>
         ) : (
           <div className='flex items-center justify-center h-full bg-muted'>
             <div className='text-center'>

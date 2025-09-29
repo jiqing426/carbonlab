@@ -19,6 +19,7 @@ export interface ContentItem {
   type: 'policy' | 'news' | 'data' | 'report' | 'data-insight';
   repositoryId: string;
   fileType?: string; // 添加文件类型字段
+  preview_image_url?: string | null; // 添加封面图片字段
 }
 
 export interface SyncData {
@@ -270,15 +271,15 @@ class ContentSyncService {
       // 使用固定的folder_id和appKey获取文件
       const { getFiles } = await import('@/lib/api/files');
       const appKey = process.env.NEXT_PUBLIC_TALE_APP_KEY || 'oa_HBamFxnA';
-      const filesResponse = await getFiles({ 
-        folder_id: '948890a3-8022-41bc-aea5-b24db275ac11' 
+      const filesResponse = await getFiles({
+        folder_id: '948890a3-8022-41bc-aea5-b24db275ac11'
       }, appKey);
-      
+
       if (filesResponse.code !== 200 || !filesResponse.data?.content) {
         console.warn('No research report files found or invalid response');
         return [];
       }
-      
+
       // 将API响应转换为ContentItem格式，适配真实数据结构
       return filesResponse.data.content.map((file: any) => ({
         id: file.id,
@@ -289,10 +290,113 @@ class ContentSyncService {
         source: file.remark || '研究报告',
         type: 'report',
         repositoryId: file.folder_id,
-        fileType: file.file_type
+        fileType: file.file_type,
+        preview_image_url: file.preview_image_url || null
       }));
     } catch (error) {
       console.error('Failed to get research report content:', error);
+      throw error;
+    }
+  }
+
+  // 专门获取最新政策内容（使用固定folder_id）
+  async getLatestPolicyContent(): Promise<ContentItem[]> {
+    try {
+      // 使用固定的folder_id和appKey获取文件
+      const { getFiles } = await import('@/lib/api/files');
+      const appKey = process.env.NEXT_PUBLIC_TALE_APP_KEY || 'oa_HBamFxnA';
+      const filesResponse = await getFiles({
+        folder_id: 'd403aaf6-1886-49d7-8bbb-ad58ecc17d84'
+      }, appKey);
+
+      if (filesResponse.code !== 200 || !filesResponse.data?.content) {
+        console.warn('No latest policy files found or invalid response');
+        return [];
+      }
+
+      // 将API响应转换为ContentItem格式，适配真实数据结构
+      return filesResponse.data.content.map((file: any) => ({
+        id: file.id,
+        title: file.file_name,
+        description: file.remark || '',
+        url: file.link_url || '',
+        date: file.created_at,
+        source: file.remark || '最新政策',
+        type: 'policy',
+        repositoryId: file.folder_id,
+        fileType: file.file_type,
+        preview_image_url: file.preview_image_url || null
+      }));
+    } catch (error) {
+      console.error('Failed to get latest policy content:', error);
+      throw error;
+    }
+  }
+
+  // 专门获取双碳快讯内容（使用固定folder_id）
+  async getNewsCarouselContent(): Promise<ContentItem[]> {
+    try {
+      // 使用固定的folder_id和appKey获取文件
+      const { getFiles } = await import('@/lib/api/files');
+      const appKey = process.env.NEXT_PUBLIC_TALE_APP_KEY || 'oa_HBamFxnA';
+      const filesResponse = await getFiles({
+        folder_id: 'f94682dc-44ba-483b-a192-8b43fab2fef8'
+      }, appKey);
+
+      if (filesResponse.code !== 200 || !filesResponse.data?.content) {
+        console.warn('No news carousel files found or invalid response');
+        return [];
+      }
+
+      // 将API响应转换为ContentItem格式，适配真实数据结构
+      return filesResponse.data.content.map((file: any) => ({
+        id: file.id,
+        title: file.file_name,
+        description: file.remark || '',
+        url: file.link_url || '',
+        date: file.created_at,
+        source: file.remark || '双碳快讯',
+        type: 'news',
+        repositoryId: file.folder_id,
+        fileType: file.file_type,
+        preview_image_url: file.preview_image_url || null
+      }));
+    } catch (error) {
+      console.error('Failed to get news carousel content:', error);
+      throw error;
+    }
+  }
+
+  // 专门获取热点新闻内容（使用固定folder_id）
+  async getHotNewsContent(): Promise<ContentItem[]> {
+    try {
+      // 使用固定的folder_id和appKey获取文件
+      const { getFiles } = await import('@/lib/api/files');
+      const appKey = process.env.NEXT_PUBLIC_TALE_APP_KEY || 'oa_HBamFxnA';
+      const filesResponse = await getFiles({
+        folder_id: '9e79424b-287f-4422-8a10-794d5db6a74c'
+      }, appKey);
+
+      if (filesResponse.code !== 200 || !filesResponse.data?.content) {
+        console.warn('No hot news files found or invalid response');
+        return [];
+      }
+
+      // 将API响应转换为ContentItem格式，适配真实数据结构
+      return filesResponse.data.content.map((file: any) => ({
+        id: file.id,
+        title: file.file_name,
+        description: file.remark || '',
+        url: file.link_url || '',
+        date: file.created_at,
+        source: file.remark || '热点新闻',
+        type: 'news',
+        repositoryId: file.folder_id,
+        fileType: file.file_type,
+        preview_image_url: file.preview_image_url || null
+      }));
+    } catch (error) {
+      console.error('Failed to get hot news content:', error);
       throw error;
     }
   }

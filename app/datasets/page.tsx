@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Globe, Database, FileText, BarChart3, Building2, Factory, School, Search } from "lucide-react"
+import { Globe, Database, FileText, BarChart3, Search } from "lucide-react"
 import {
   Breadcrumb,
   BreadcrumbItem,
@@ -10,10 +10,34 @@ import {
   BreadcrumbPage,
   BreadcrumbSeparator,
 } from "@/components/ui/breadcrumb"
-import Link from "next/link"
+import { useState, useEffect } from "react"
+
+// 数据洞察接口
+interface DatasetItem {
+  title: string;
+  url: string;
+  description: string;
+  fileType?: string;
+  preview_image_url?: string | null;
+  repositoryId?: string;
+  id?: string;
+}
+
+interface DatasetCategory {
+  id: string;
+  title: string;
+  icon: any;
+  datasets: DatasetItem[];
+}
 
 // 数据源分类
-const dataCategories = [
+const dataCategories: DatasetCategory[] = [
+  {
+    id: "insights",
+    title: "数据洞察",
+    icon: BarChart3,
+    datasets: [] // 将通过API动态填充
+  },
   {
     id: "global",
     title: "全球数据",
@@ -128,6 +152,61 @@ const dataCategories = [
 ]
 
 export default function DatasetsPage() {
+  const [dynamicDataCategories, setDynamicDataCategories] = useState<DatasetCategory[]>(dataCategories);
+  const [loading, setLoading] = useState(true);
+
+  // 从资料库加载数据洞察数据
+  useEffect(() => {
+    const loadDatasets = async () => {
+      try {
+        // 动态导入内容同步服务
+        const { contentSyncService } = await import('@/lib/services/content-sync-service');
+
+        // 获取数据洞察内容
+        const insights = await contentSyncService.getDataInsightContent();
+
+        if (insights.length > 0) {
+          // 更新数据洞察分类的数据
+          const updatedCategories = dataCategories.map(category => {
+            if (category.id === 'insights') {
+              return {
+                ...category,
+                datasets: insights.map(insight => ({
+                  title: insight.title,
+                  url: insight.url || `/admin/libraries/${insight.repositoryId}/files/${insight.id}/viewer`,
+                  description: insight.description || '暂无描述',
+                  fileType: insight.fileType,
+                  preview_image_url: insight.preview_image_url || null,
+                  repositoryId: insight.repositoryId,
+                  id: insight.id
+                }))
+              };
+            }
+            return category;
+          });
+          setDynamicDataCategories(updatedCategories);
+        }
+      } catch (error) {
+        console.error('Failed to load datasets:', error);
+        // 保持默认数据
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadDatasets();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-20 py-12">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg">加载中...</div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-7xl mx-auto px-20 py-12">
       {/* 面包屑导航 */}
@@ -153,7 +232,7 @@ export default function DatasetsPage() {
         </div>
       </div>
       <div className="space-y-10">
-        {dataCategories.map((category) => (
+        {dynamicDataCategories.map((category) => (
           <Card key={category.id} className="overflow-hidden">
             <CardHeader className="bg-gray-50 border-b">
               <div className="flex items-center gap-2">
@@ -162,20 +241,49 @@ export default function DatasetsPage() {
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="grid gap-4">
-                {category.datasets.map((dataset, index) => (
-                  <a
-                    key={index}
-                    href={dataset.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block p-4 rounded-lg border hover:bg-gray-50 transition-colors"
-                  >
-                    <h3 className="font-bold text-lg md:text-xl text-gray-900 mb-1">{dataset.title}</h3>
-                    <p className="text-sm text-gray-600">{dataset.description}</p>
-                  </a>
+              {category.datasets.length === 0 ? (
+                <div className="text-center py-8 text-gray-500">
+                  <p>暂无数据</p>
+                </div>
+              ) : (
+                <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                  {category.datasets.map((dataset, index) => (
+                    <div
+                      key={index}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        if (dataset.url && dataset.url.startsWith('http')) {
+                          window.open(dataset.url, '_blank');
+                        } else if (dataset.url) {
+                          window.open(dataset.url, '_blank');
+                        }
+                      }}
+                      className="block rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden shadow-sm hover:shadow-md"
+                    >
+                    {/* 封面图片区域 */}
+                    {dataset.preview_image_url && (
+                      <div className="aspect-[3/4] bg-gray-100 relative">
+                        <img
+                          src={dataset.preview_image_url}
+                          alt={dataset.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <button type="button" className="bg-white text-blue-600 px-4 py-2 rounded-full text-sm font-medium">
+                            <FileText className="mr-1 h-4 w-4 inline" /> 查看数据
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {/* 内容区域 */}
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2">{dataset.title}</h3>
+                      <p className="text-sm text-gray-600 line-clamp-3">{dataset.description}</p>
+                    </div>
+                  </div>
                 ))}
               </div>
+              )}
             </CardContent>
           </Card>
         ))}

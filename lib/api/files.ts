@@ -12,6 +12,7 @@ export interface FileData {
   link_url?: string;
   content?: string;
   oss_url?: string;
+  preview_image_url?: string;
   remark?: string;
   created_at: string;
   updated_at: string;
@@ -506,6 +507,55 @@ export async function getOssMetadata(
   const result = await response.json();
   if (result.code !== 200) {
     throw new Error(result.msg || '获取OSS元数据失败');
+  }
+  return result.data;
+}
+
+// 上传预览图片响应类型
+export interface UploadPreviewImageResponse {
+  code: number;
+  msg: string;
+  data: {
+    preview_image_url: string;
+  };
+}
+
+// 上传文件预览图片
+export async function uploadFilePreviewImage(
+  fileId: string,
+  imageFile: File,
+  appKey?: string
+): Promise<UploadPreviewImageResponse['data']> {
+  if (!appKey) {
+    throw new Error('No app key provided');
+  }
+
+  const appToken = await appTokenService.getValidAppToken(appKey);
+  if (!appToken) {
+    throw new Error('No valid app token');
+  }
+
+  const formData = new FormData();
+  formData.append('file', imageFile);
+
+  const response = await fetch(`${API_BASE_URL}/cms/v1/files/${fileId}/preview-image`, {
+    method: 'POST',
+    headers: {
+      'x-t-token': appToken,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) {
+    const errorResult = await response.json().catch(() => null);
+    const errorMessage =
+      errorResult?.msg || `HTTP error! status: ${response.status}`;
+    throw new Error(errorMessage);
+  }
+
+  const result = await response.json();
+  if (result.code !== 200) {
+    throw new Error(result.msg || '上传预览图片失败');
   }
   return result.data;
 }

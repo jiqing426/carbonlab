@@ -12,7 +12,24 @@ import {
 import Link from "next/link"
 import { Globe, Database, Search, FileText } from "lucide-react"
 import { useState, useEffect } from "react"
-import { handleFileClick } from "@/lib/utils/file-navigation"
+
+// 报告数据接口
+interface ReportDataset {
+  title: string;
+  url: string;
+  description: string;
+  fileType?: string;
+  preview_image_url?: string | null;
+  repositoryId?: string;
+  id?: string;
+}
+
+interface ReportCategory {
+  id: string;
+  title: string;
+  icon: any;
+  datasets: ReportDataset[];
+}
 
 // 报告数据分类
 const reportCategories = [
@@ -151,7 +168,7 @@ const reportSites = [
 ]
 
 export default function ReportsPage() {
-  const [dynamicReportCategories, setDynamicReportCategories] = useState(reportCategories);
+  const [dynamicReportCategories, setDynamicReportCategories] = useState<ReportCategory[]>(reportCategories);
   const [loading, setLoading] = useState(true);
 
   // 从资料库加载研究报告数据
@@ -172,9 +189,12 @@ export default function ReportsPage() {
                 ...category,
                 datasets: reports.map(report => ({
                   title: report.title,
-                  url: report.url || '/dashboard/resources/repo_004',
+                  url: report.url || `/admin/libraries/${report.repositoryId}/files/${report.id}/viewer`,
                   description: report.description || '暂无描述',
-                  fileType: report.fileType
+                  fileType: report.fileType,
+                  preview_image_url: report.preview_image_url || null,
+                  repositoryId: report.repositoryId,
+                  id: report.id
                 }))
               };
             }
@@ -237,19 +257,40 @@ export default function ReportsPage() {
               </div>
             </CardHeader>
             <CardContent className="p-6">
-              <div className="grid gap-4">
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
                 {category.datasets.map((report, index) => (
                   <div
                     key={index}
-                    onClick={(e) => handleFileClick({
-                      url: report.url,
-                      fileType: report.fileType,
-                      title: report.title
-                    }, e)}
-                    className="block p-4 rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer"
+                    onClick={(e) => {
+                      e.preventDefault();
+                      if (report.url.startsWith('http')) {
+                        window.open(report.url, '_blank');
+                      } else {
+                        window.open(report.url, '_blank');
+                      }
+                    }}
+                    className="block rounded-lg border hover:bg-gray-50 transition-colors cursor-pointer overflow-hidden shadow-sm hover:shadow-md"
                   >
-                    <h3 className="font-bold text-lg md:text-xl text-gray-900 mb-1">{report.title}</h3>
-                    <p className="text-sm text-gray-600">{report.description}</p>
+                    {/* 封面图片区域 */}
+                    {report.preview_image_url && (
+                      <div className="aspect-[3/4] bg-gray-100 relative">
+                        <img
+                          src={report.preview_image_url}
+                          alt={report.title}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center">
+                          <button type="button" className="bg-white text-blue-600 px-4 py-2 rounded-full text-sm font-medium">
+                            <FileText className="mr-1 h-4 w-4 inline" /> 查看报告
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                    {/* 内容区域 */}
+                    <div className="p-4">
+                      <h3 className="font-bold text-lg text-gray-900 mb-2 line-clamp-2">{report.title}</h3>
+                      <p className="text-sm text-gray-600 line-clamp-3">{report.description}</p>
+                    </div>
                   </div>
                 ))}
               </div>
