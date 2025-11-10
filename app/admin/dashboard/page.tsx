@@ -15,12 +15,8 @@ import {
   Clock,
   Award,
   UserCheck,
-  BookOpen,
   BeakerIcon,
-  CheckCircle,
   Activity,
-  BarChart3,
-  PieChart,
   Users2,
   Target,
   Calendar

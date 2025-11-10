@@ -26,7 +26,9 @@ import {
   Plus,
   FileText,
   CheckCircle,
-  AlertCircle
+  AlertCircle,
+  BarChart3,
+  Home
 } from "lucide-react"
 
 export default function AdminPage() {
