@@ -8,7 +8,8 @@ import {
   BeakerIcon,
   FileText,
   Library,
-  UserCheck
+  UserCheck,
+  BarChart2
 } from 'lucide-react'
 
 export type Route = {
@@ -46,13 +47,29 @@ export const routeGroups: RouteGroup[] = [
     ],
   },
   {
-    id: 'user-management',
-    title: '用户管理',
+    id: 'data-dashboard',
+    title: '数据看板',
     allowedRoles: ['admin', 'manager'],
     isDisplayedOnPage: true,
     routes: [
       {
-        title: '用户列表',
+        title: '数据看板',
+        description: '实时掌握平台运行状况和教学数据分析',
+        icon: BarChart2,
+        href: '/admin/dashboard',
+        isAccessible: true,
+        allowedRoles: ['admin', 'manager'],
+      },
+    ],
+  },
+  {
+    id: 'user-management',
+    title: '系统管理',
+    allowedRoles: ['admin', 'manager'],
+    isDisplayedOnPage: true,
+    routes: [
+      {
+        title: '用户管理',
         description: '管理用户账号和权限',
         icon: Users,
         href: '/admin/users',
